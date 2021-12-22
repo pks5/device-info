@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.12.0/css/xterm.min.css">
+
+    <title>Device Info - Raspilab Experiments</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+      html{
+        height:100%;
+        
+      }
+      body{
+        background-image: url('./img/bg.jpg');
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+        height:100%;
+        font-family: 'Roboto', sans-serif;
+        
+      }
+
+      #main-layout{
+         display:flex;
+         flex-direction: column;
+         justify-content: space-between;
+         height:100%;
+         color:white;
+      }
+
+      h2{
+          font-size:16px;
+          font-weight:bold;
+          margin:0;
+          padding:0;
+          margin-bottom:10px;
+      }
+              
+      table{
+          border-collapse:collapse;
+      }
+
+      td{
+          padding:5px;
+          border:solid 1px #2980b9;
+      }
+
+      #kpi{
+          display:flex;
+          margin-bottom:20px;
+          font-size:14px;
+      }        
+
+      .kpi-cell:not(:last-child){
+          padding-right:20px;
+      }
+
+      .kpi-cell > span{
+          font-weight:bold;
+      }
+
+      
+    </style>
+  </head>
+  <body>
+    
+
+    <div id="main-layout">
+      <div>
+      <select class="form-select" id="deviceSelect">
+        <option selected>Select Device</option>
+      </select>
+      </div>
+      <div>
+          <div id="kpi">
+              <div class="kpi-cell">Apps:&nbsp;<span id="kpi-apps-running">0</span></div>
+              <div class="kpi-cell">Scripts:&nbsp;<span id="kpi-scripts-running">0</span></div>
+              <div class="kpi-cell">Led&nbsp;status:&nbsp;<span id="kpi-led-status">disabled</span></div>
+          </div>
+          <div id="details">
+              <h2>Scripts</h2>
+              <div id="scripts"></div>
+          </div>
+      </div>
+      
+      <div id="xterm-container"></div>
+    </div>
+
+    
+
+      
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="statusModalLabel">Error</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            ...
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@4.12.0/lib/xterm.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@6.1.0/bundles/stomp.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+    
+    <script>
+        const oConfig = {
+          appId: "net.raspilab.experiments.device_info",
+          deviceHostName: "jojojo",
+          authClientId: "growcab_local"
+        };
+
+        const term = new Terminal();
+        term.open(document.getElementById('xterm-container'));
+
+        const elStatusModal = new bootstrap.Modal(document.getElementById('statusModal'), {
+          backdrop: "static"
+        });
+        
+        let oFeatureHub;
+
+        let fnConnect = function(){
+            DeviceSelection.init();
+            
+            oFeatureHub = new FeatureHub({
+                appId: oConfig.appId,
+                clientId: oConfig.authClientId
+            });
+
+            console.log(oFeatureHub)
+
+            oFeatureHub.connect(function(oServerInfo){
+                oFeatureHub.devices(DeviceSelection.onReceiveDevices);
+
+                term.writeln("Connected to " + oServerInfo.webSocketUrl);
+            });
+        };
+
+        let scriptLocation = 'https://my.featurehub.net/lib/v1/fhub.js';
+
+        if(location.hostname.indexOf('.localnet') !== -1){
+          //  scriptLocation = 'http://my.featurehub.localnet:8787/lib/v1/fhub.js';
+        }
+
+        const script = document.createElement('script');
+        script.src = scriptLocation;
+        script.addEventListener('load', fnConnect);
+        document.body.appendChild(script);
+
+        let DeviceSelection = {};
+
+        DeviceSelection.init = function(){
+            let elSelect = document.getElementById("deviceSelect");
+            elSelect.addEventListener("change", DeviceSelection.onSelectDevice);
+
+            DeviceSelection.elSelect = elSelect;
+        };
+
+        DeviceSelection.onReceiveDevices = function(oData){
+          let elSelect = DeviceSelection.elSelect,
+              sCurrentValue = elSelect.value,
+              bCurrentValueFound = false;
+
+          elSelect.innerHTML = "";
+
+          elOpt = document.createElement('option');
+          elOpt.innerHTML = "Select Device";
+          elSelect.appendChild(elOpt);
+
+          for (let i = 0; i<oData.devices.length; i++){
+            let oDevice = oData.devices[i], 
+                elOpt = document.createElement('option');
+            
+            elOpt.value = oDevice.machineId;
+            elOpt.innerHTML = oDevice.hostName;
+            elSelect.appendChild(elOpt);
+
+            if(sCurrentValue && oDevice.machineId === sCurrentValue){
+              bCurrentValueFound = true;
+              elOpt.selected = true;
+            }
+          }
+
+          if(!bCurrentValueFound){
+            sCurrentValue = null;
+          }
+
+          if(!sCurrentValue){
+            if(oData.devices.length === 1){
+                elSelect.value = oData.devices[0].machineId;
+            }
+            else if (window.BletaElectron) {
+                elSelect.value = BletaElectron.getMachineId();
+				    }
+            else{
+                for (let i = 0; i<oData.devices.length; i++){
+                    let oDevice = oData.devices[i];
+                    if(oDevice.hostName === oConfig.deviceHostName){
+                      elSelect.value = oDevice.machineId;
+                    }
+                }
+            }
+
+            DeviceSelection.onSelectDevice();
+          }
+        };
+
+        DeviceSelection.onSelectDevice = function(){
+          let elSelect = DeviceSelection.elSelect,
+              sMachineId = elSelect.value;
+          
+          if(sMachineId){
+            DeviceSelection.selectDevice(sMachineId);
+          }
+        };
+
+        DeviceSelection.selectDevice = function(sMachineId){
+          /*
+            * Setup Default Target
+            */
+            oFeatureHub.setDefaultTarget({
+              device: sMachineId
+            });
+
+            /*
+            * Subscribe to Console
+            */
+            oFeatureHub.unsubscribe('deviceConsole');
+            oFeatureHub.subscribe('deviceConsole', sMachineId + "/console", function(oData, mHeaders){
+                term.writeln(oData.args[0]); 
+            });
+
+            /*
+            * Subscribe to Device Status
+            */
+            oFeatureHub.unsubscribe('deviceStatus');
+            oFeatureHub.subscribe('deviceStatus', sMachineId, onReceiveDeviceStatus);
+
+            oFeatureHub.send({ method:"requestStatus" }, { });
+
+            
+        };
+
+        /*
+        * Triggered when a Device Status Message has been received
+        */ 
+        let iTimeOut = null;
+        let onReceiveDeviceStatus = function(oData, mHeaders){
+            
+
+            let sFrom = new URL(mHeaders["fh-from"]),
+                aPathParts = sFrom.pathname.split("/"),
+                sMachineId = aPathParts[aPathParts.length-1],
+                sPhappId = sFrom.searchParams.get("app");
+
+                console.log('STATUS', sPhappId, oData, mHeaders);
+
+            if(!sPhappId){
+                oDeviceStatus = oData.status;
+                //A message without the PyApp id
+                //Information from the device itself
+                if(oData.connected){
+                    console.log("Device %s is connected.", sMachineId);
+                    elStatusModal.hide();
+                }
+                else{
+                    elStatusModal.show(); 
+                    console.log("Device %s is disconnected.", sMachineId);
+                }
+
+                const elScripts = document.getElementById("scripts");
+
+                if(oDeviceStatus){
+                  document.getElementById("kpi-apps-running").innerHTML = oDeviceStatus.appsRunning;
+                  document.getElementById("kpi-scripts-running").innerHTML = oDeviceStatus.scriptsRunning;
+                  document.getElementById("kpi-led-status").innerHTML = oData.ledStatusEnabled ? "enabled" : "disabled";
+                  
+                  var oTable = elScripts.firstChild;
+                  if(!oTable){
+                      oTable = document.createElement("table");
+                      elScripts.appendChild(oTable);
+                  }
+                  else{
+                      oTable.removeChild(oTable.firstChild);
+                  }
+                  var oTableBody = document.createElement("tbody");
+                  
+                  for(var i = 0; i < oDeviceStatus.apps.length; i++){
+                      var oApp = oDeviceStatus.apps[i];
+                      for(var j = 0; j < oApp.scripts.length; j++){
+                          var oScript = oApp.scripts[j],
+                              oTableRow = document.createElement("tr"),
+                              oTableCellAppId = document.createElement("td"),
+                              oTableCellScriptName = document.createElement("td"),
+                              oTableCellPid = document.createElement("td");
+                          
+                          oTableCellAppId.innerHTML = oApp.appId;
+                          oTableCellScriptName.innerHTML = oScript.path;
+                          oTableCellPid.innerHTML = oScript.pid;
+                          
+                          oTableRow.appendChild(oTableCellPid);
+                          oTableRow.appendChild(oTableCellScriptName);
+                          oTableRow.appendChild(oTableCellAppId);
+                          
+                          oTableBody.appendChild(oTableRow);
+                      }
+                  }
+                  
+                  oTable.appendChild(oTableBody);
+                }
+                else{
+                  document.getElementById("kpi-apps-running").innerHTML = "";
+                  document.getElementById("kpi-scripts-running").innerHTML = "";
+                  document.getElementById("kpi-led-status").innerHTML = "";
+                  
+                  elScripts.innerHTML = "";
+                }
+
+                  
+            }
+            else if(sPhappId === oConfig.pyAppId){
+                
+            }
+            else{
+                //Ignore messages from other PyApps on this device
+            }
+            
+        };
+
+        
+    </script>
+
+    
+    
+  </body>
+</html>
