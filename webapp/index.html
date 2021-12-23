@@ -47,16 +47,7 @@
           margin-bottom:10px;
       }
               
-      table{
-          border-collapse:collapse;
-      }
-
-      td{
-          padding:5px;
-          border:solid 1px #2980b9;
-      }
-
-      #kpi{
+      .kpi{
           display:flex;
           margin-bottom:20px;
           font-size:14px;
@@ -70,7 +61,9 @@
           font-weight:bold;
       }
 
-      
+      #terminal{
+          background-color: black;
+      }
     </style>
   </head>
   <body>
@@ -82,19 +75,35 @@
         <option selected>Select Device</option>
       </select>
       </div>
-      <div>
-          <div id="kpi">
-              <div class="kpi-cell">Apps:&nbsp;<span id="kpi-apps-running">0</span></div>
-              <div class="kpi-cell">Scripts:&nbsp;<span id="kpi-scripts-running">0</span></div>
-              <div class="kpi-cell">Led&nbsp;status:&nbsp;<span id="kpi-led-status">disabled</span></div>
+      <div class="p-2">
+          <div class="kpi">
+            <div class="kpi-cell">OS:&nbsp;<span id="os-icon" class="fab fa-linux"></span></div>
+            <div class="kpi-cell">COM:&nbsp;<span id="last-com-connect"></span></div>
+            
           </div>
-          <div id="details">
-              <h2>Scripts</h2>
-              <div id="scripts"></div>
-          </div>
+          <div class="d-flex">
+            <div class="me-2">
+              <h2>Deployments</h2>
+              <div id="deployments"></div>
+            </div>
+            <div>
+                <h2>Device</h2>
+                <div class="kpi">
+                  <div class="kpi-cell">Apps:&nbsp;<span id="kpi-apps-running">0</span></div>
+                  <div class="kpi-cell">Scripts:&nbsp;<span id="kpi-scripts-running">0</span></div>
+                  <div class="kpi-cell">Led&nbsp;status:&nbsp;<span id="kpi-led-status">disabled</span></div>
+                </div>
+                <div id="details">
+                  <h2>Scripts</h2>
+                  <div id="scripts"></div>
+                </div>
+            </div>
+            
+        </div>
       </div>
-      
-      <div id="xterm-container"></div>
+      <div id="terminal" class="p-2">
+        <div id="xterm-container"></div>
+      </div>
     </div>
 
     
@@ -236,11 +245,83 @@
         };
 
         DeviceSelection.selectDevice = function(sMachineId){
+            term.clear();
+
           /*
             * Setup Default Target
             */
             oFeatureHub.setDefaultTarget({
               device: sMachineId
+            });
+
+
+            oFeatureHub.device(sMachineId, function(oData){
+              console.log(oData);
+                  const elLastComConnect = document.getElementById("last-com-connect");
+                  elLastComConnect.innerHTML = new Date(oData.device.lastComConnectDate).toLocaleString("en-US", { timeZone: 'UTC' });
+
+
+                  const elDeployments = document.getElementById("deployments");
+                  if(oData.device.apps.length){
+                    
+                    var oTable = elDeployments.firstChild;
+                    if(!oTable){
+                        oTable = document.createElement("table");
+                        oTable.className = "table table-dark table-striped";
+                        elDeployments.appendChild(oTable);
+                    }
+                    else{
+                        oTable.removeChild(oTable.firstChild);
+                    }
+                    
+                    var oTableBody = document.createElement("tbody");
+                    
+                    let oTableRow = document.createElement("tr"),
+                          oTableCellAppId = document.createElement("th"),
+                          oTableCellAppName = document.createElement("th"),
+                          oTableCellStart = document.createElement("th");
+
+                      oTableCellAppId.innerHTML = "ID";
+                      oTableCellAppName.innerHTML = "Name";
+                      oTableCellStart.innerHTML = "Start";
+                    
+                      oTableRow.appendChild(oTableCellAppName);
+                      oTableRow.appendChild(oTableCellAppId);
+                      oTableRow.appendChild(oTableCellStart);
+                      
+                      oTableBody.appendChild(oTableRow);
+
+                    for(var i = 0; i < oData.device.apps.length; i++){
+                        const oApp = oData.device.apps[i];
+
+                            oTableRow = document.createElement("tr");
+                                oTableCellAppId = document.createElement("td");
+                                oTableCellAppName = document.createElement("td");
+                                oTableCellStart = document.createElement("td");
+                            
+                            oTableCellAppId.innerHTML = oApp.appId;
+                            oTableCellAppName.innerHTML = oApp.name;
+
+                            if(oData.appsToStart.indexOf(oApp.appId) !== -1){
+                                const oIcon = document.createElement("i");
+                                oIcon.className = "fas fa-check";
+                                oTableCellStart.appendChild(oIcon);
+                            }
+                            
+                            oTableRow.appendChild(oTableCellAppName);
+                            oTableRow.appendChild(oTableCellAppId);
+                            oTableRow.appendChild(oTableCellStart);
+                            
+                            oTableBody.appendChild(oTableRow);
+                    }
+                    
+                    oTable.appendChild(oTableBody);
+                  }
+                  else{
+                    elDeployments.innerHTML = "";
+                  }
+            }, function(){
+
             });
 
             /*
@@ -265,7 +346,6 @@
         /*
         * Triggered when a Device Status Message has been received
         */ 
-        let iTimeOut = null;
         let onReceiveDeviceStatus = function(oData, mHeaders){
             
 
@@ -299,20 +379,37 @@
                   var oTable = elScripts.firstChild;
                   if(!oTable){
                       oTable = document.createElement("table");
+                      oTable.className = "table table-dark table-striped";
                       elScripts.appendChild(oTable);
                   }
                   else{
                       oTable.removeChild(oTable.firstChild);
                   }
                   var oTableBody = document.createElement("tbody");
+
+                  let oTableRow = document.createElement("tr"),
+                        oTableCellAppId = document.createElement("th"),
+                        oTableCellScriptName = document.createElement("th"),
+                        oTableCellPid = document.createElement("th");
+
+                        oTableCellAppId.innerHTML = "ID";
+                          oTableCellScriptName.innerHTML = "Name";
+                          oTableCellPid.innerHTML = "PID";
+                          
+                          oTableRow.appendChild(oTableCellPid);
+                          oTableRow.appendChild(oTableCellScriptName);
+                          oTableRow.appendChild(oTableCellAppId);
+                      
+                      oTableBody.appendChild(oTableRow);
                   
                   for(var i = 0; i < oDeviceStatus.apps.length; i++){
                       var oApp = oDeviceStatus.apps[i];
                       for(var j = 0; j < oApp.scripts.length; j++){
-                          var oScript = oApp.scripts[j],
-                              oTableRow = document.createElement("tr"),
-                              oTableCellAppId = document.createElement("td"),
-                              oTableCellScriptName = document.createElement("td"),
+                          var oScript = oApp.scripts[j];
+
+                          oTableRow = document.createElement("tr");
+                              oTableCellAppId = document.createElement("td");
+                              oTableCellScriptName = document.createElement("td");
                               oTableCellPid = document.createElement("td");
                           
                           oTableCellAppId.innerHTML = oApp.appId;
