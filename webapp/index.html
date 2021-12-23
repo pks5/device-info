@@ -77,10 +77,15 @@
       </select>
       </div>
       <div class="p-2">
-          <div class="kpi">
-            <div class="kpi-cell">OS:&nbsp;<span id="os-icon" class="fab fa-linux"></span></div>
-            <div class="kpi-cell">COM:&nbsp;<span id="last-com-connect"></span></div>
-            
+          <div>
+            <div id="electron-buttons" style="display: none;">
+              <button class="btn btn-secondary btn-lg" id="devtools-button"><i class="fas fa-door-open"></i> Dev Tools</button>
+              <button class="btn btn-secondary btn-lg" id="exit-button"><i class="fas fa-door-open"></i> Exit</button>
+            </div>
+            <div class="kpi">
+              <div class="kpi-cell">OS:&nbsp;<span id="os-icon" class="fab fa-linux"></span></div>
+              <div class="kpi-cell">COM:&nbsp;<span id="last-com-connect"></span></div>
+            </div>
           </div>
           <div class="d-flex">
             <div class="me-2">
@@ -446,7 +451,30 @@
             
         };
 
-        
+        /*
+        * Show Exit Button when shown inside an display
+        */
+       const elElectronButtons = document.getElementById("electron-buttons");
+        if(typeof BletaElectron !== "undefined"){
+          
+          elElectronButtons.style.display = "inline-block";
+
+          /*
+          * Exit Button Handler
+          */
+          const elExitButton = document.getElementById("exit-button");
+          elExitButton.addEventListener("click", function(){
+            BletaElectron.gracefulExit();
+          });
+
+          const elDevtoolsButton = document.getElementById("devtools-button");
+          elDevtoolsButton.addEventListener("click", function(){
+            BletaElectron.toggleDevTools();
+          });
+        }
+        else{
+          elElectronButtons.style.display = "none";
+        }
     </script>
 
     
