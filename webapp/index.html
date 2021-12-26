@@ -78,11 +78,17 @@
       </div>
       <div class="p-2">
           <div>
+            <div id="system-buttons" style="display: none;">
+              <button class="btn btn-secondary btn-lg" id="shutdown-button"><i class="fas fa-power-off"></i> Shutdown</button>
+              <button class="btn btn-secondary btn-lg" id="reboot-button"><i class="fas fa-sync-alt"></i> Reboot</button>
+            </div>
             <div id="electron-buttons" style="display: none;">
+
               <button class="btn btn-secondary btn-lg" id="devtools-button"><i class="fas fa-door-open"></i> Dev Tools</button>
               <button class="btn btn-secondary btn-lg" id="exit-button"><i class="fas fa-door-open"></i> Exit</button>
             </div>
             <div class="kpi">
+              <div class="kpi-cell">STATUS:&nbsp;<span id="device-status"></span></div>
               <div class="kpi-cell">OS:&nbsp;<span id="os-icon" class="fab fa-linux"></span></div>
               <div class="kpi-cell">COM:&nbsp;<span id="last-com-connect"></span></div>
             </div>
@@ -165,7 +171,16 @@
 
             console.log(oFeatureHub)
 
+            oFeatureHub.m_oSocketClient.addEventListener("socketClose", x => {
+                elStatusModal.show(); 
+            });
+
+            oFeatureHub.addEventListener("connect", x => {
+                elStatusModal.hide();
+            });
+
             oFeatureHub.connect(function(oServerInfo){
+                 
                 oFeatureHub.devices(DeviceSelection.onReceiveDevices);
 
                 term.writeln("Connected to " + oServerInfo.webSocketUrl);
@@ -239,6 +254,8 @@
 
             DeviceSelection.onSelectDevice();
           }
+
+          
         };
 
         DeviceSelection.onSelectDevice = function(){
@@ -352,6 +369,9 @@
         /*
         * Triggered when a Device Status Message has been received
         */ 
+         const elDeviceStatus = document.getElementById("device-status"),
+         elSystemButtons = document.getElementById("system-buttons");
+
         let onReceiveDeviceStatus = function(oData, mHeaders){
             
 
@@ -368,11 +388,17 @@
                 //Information from the device itself
                 if(oData.connected){
                     console.log("Device %s is connected.", sMachineId);
-                    elStatusModal.hide();
+                    
+                    elDeviceStatus.innerHTML = "CONNECTED";
+                    elDeviceStatus.className = "text-success";
+                    elSystemButtons.style.display = "block";
                 }
                 else{
-                    elStatusModal.show(); 
+                    
                     console.log("Device %s is disconnected.", sMachineId);
+                    elDeviceStatus.innerHTML = "DISCONNECTED";
+                    elDeviceStatus.className = "text-danger";
+                    elSystemButtons.style.display = "none";
                 }
 
                 const elScripts = document.getElementById("scripts");
@@ -450,6 +476,26 @@
             }
             
         };
+
+         /*
+        * Buttons
+        */
+        let elShutdownButton = document.getElementById("shutdown-button"),
+            elRebootButton = document.getElementById("reboot-button");
+
+        /*
+        * Shutdown Button Click Handler
+        */    
+        elShutdownButton.addEventListener("click", function(){
+          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysbridge.py", method: "sendMessage" }, { "action": "SHUTDOWN" });
+        });
+
+        /*
+        * Reboot Button Click Handler
+        */
+        elRebootButton.addEventListener("click", function(){
+          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysbridge.py", method: "sendMessage" }, { "action": "REBOOT" });
+        });
 
         /*
         * Show Exit Button when shown inside an display
