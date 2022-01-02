@@ -26,93 +26,143 @@
         background-repeat: no-repeat;
         background-size: cover;
         background-position: center;
-        height:100%;
+        padding-top:70px;
         font-family: 'Roboto', sans-serif;
+
         
       }
 
-      #main-layout{
-         display:flex;
-         flex-direction: column;
-         justify-content: space-between;
-         height:100%;
-         color:white;
-      }
-
-      h2{
-          font-size:16px;
-          font-weight:bold;
-          margin:0;
-          padding:0;
-          margin-bottom:10px;
-      }
-              
-      .kpi{
-          display:flex;
-          margin-bottom:20px;
-          font-size:14px;
-      }        
-
-      .kpi-cell:not(:last-child){
-          padding-right:20px;
-      }
-
-      .kpi-cell > span{
-          font-weight:bold;
-      }
+      
 
       #terminal{
           background-color: black;
           height:160px;
       }
+
+
+      .gaugeChart-bezel-outer {
+    fill: none;
+    stroke: black;
+  }
+
+  .gaugeChart-bezel-inner {
+   fill:none;
+    
+  }
+
+  .gaugeChart-tick {
+    fill: none;
+    stroke: black;
+  }
+
+  .gaugeChart-face,
+  .gaugeChart-tickHider {
+    stroke-width: 0;
+    fill: white;
+  }
+
+  .gaugeChart-needle {
+    stroke: #CD4120;
+    fill: #E57358;
+    opacity: 0.8;
+    transition: transform 0.5s ease-in-out;
+   
+  }
+
+  .gaugeChart-needle-cap {
+    stroke: #666666;
+    fill: #4684EE;
+  }
     </style>
   </head>
   <body>
     
-
-    <div id="main-layout">
-      <div>
-      <select class="form-select" id="deviceSelect">
-        <option selected>Select Device</option>
-      </select>
-      </div>
-      <div class="p-2">
-          <div>
-            <div id="system-buttons" style="display: none;">
-              <button class="btn btn-secondary btn-lg" id="shutdown-button"><i class="fas fa-power-off"></i> Shutdown</button>
-              <button class="btn btn-secondary btn-lg" id="reboot-button"><i class="fas fa-sync-alt"></i> Reboot</button>
-            </div>
-            <div id="electron-buttons" style="display: none;">
-
-              <button class="btn btn-secondary btn-lg" id="devtools-button"><i class="fas fa-door-open"></i> Dev Tools</button>
-              <button class="btn btn-secondary btn-lg" id="exit-button"><i class="fas fa-door-open"></i> Exit</button>
-            </div>
-            <div class="kpi">
-              <div class="kpi-cell">STATUS:&nbsp;<span id="device-status"></span></div>
-              <div class="kpi-cell">OS:&nbsp;<span id="os-icon" class="fab fa-linux"></span></div>
-              <div class="kpi-cell">COM:&nbsp;<span id="last-com-connect"></span></div>
+    <nav class="navbar fixed-top navbar-light bg-light navbar-expand-md">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#"><span id="device-status"></span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarText">
+          <small class="navbar-text">
+            since <span id="last-com-connect"></span> UTC
+          </small>
+          
+          
+          
+            
+            
+          
+          
+          <div class="d-flex ms-auto align-items-center">
+            <div class="me-1"><span id="os-icon" class="fab fa-linux"></span><span id="kpi-led-status">disabled</span></div>
+            <select class="form-select me-1" id="deviceSelect">
+              <option selected>Select Device</option>
+            </select>
+            <div id="system-buttons" class="d-flex" style="display: none;">
+              <button class="btn btn-outline-dark me-1" id="shutdown-button"><i class="fas fa-power-off"></i></button>
+              <button class="btn btn-outline-dark me-1" id="reboot-button"><i class="fas fa-sync-alt"></i></button>
+              <button class="btn btn-outline-dark me-1" id="exit-button"><i class="fas fa-door-open"></i></button>
+              <button class="btn btn-outline-dark" id="devtools-button"><i class="fas fa-tools"></i></button>
             </div>
           </div>
-          <div class="d-flex">
-            <div class="me-2">
-              <h2>Deployments</h2>
-              <div id="deployments"></div>
-            </div>
-            <div>
-                <h2>Device</h2>
-                <div class="kpi">
-                  <div class="kpi-cell">Apps:&nbsp;<span id="kpi-apps-running">0</span></div>
-                  <div class="kpi-cell">Scripts:&nbsp;<span id="kpi-scripts-running">0</span></div>
-                  <div class="kpi-cell">Led&nbsp;status:&nbsp;<span id="kpi-led-status">disabled</span></div>
-                </div>
-                <div id="details">
-                  <h2>Scripts</h2>
-                  <div id="scripts"></div>
-                </div>
-            </div>
-            
         </div>
       </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col" id="cpu-gauge">
+          
+        </div>
+        <div class="col" id="memory-gauge">
+          
+        </div>
+        <div class="col" id="disk-gauge">
+          
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-md">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Deployments <span id="kpi-deployments" class="badge bg-secondary"></span></h5>
+              <h6 class="card-subtitle mb-2 text-muted">User Apps deployed on this device</h6>
+            </div>
+            <ul id="deployments-list" class="list-group list-group-flush">
+              
+            </ul>
+          </div>
+        </div>
+        <div class="col-md">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Apps <span id="kpi-apps-running" class="badge bg-secondary"></span></h5>
+              <h6 class="card-subtitle mb-2 text-muted">Apps running on this device</h6>
+            </div>
+            <ul id="apps-list" class="list-group list-group-flush">
+              
+            </ul>
+          </div>
+        </div>
+        <div class="col-md">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Scripts <span id="kpi-scripts-running" class="badge bg-secondary"></span></h5>
+              <h6 class="card-subtitle mb-2 text-muted">Scripts running on this device</h6>
+            </div>
+            <ul id="scripts-list" class="list-group list-group-flush">
+              
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div>
+      
+      
       <div id="terminal" class="p-2">
         <div id="xterm-container"></div>
       </div>
@@ -121,7 +171,7 @@
     
 
       
-    </div>
+    
 
     <!-- Modal -->
     <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
@@ -144,7 +194,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@6.1.0/bundles/stomp.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.2.1/dist/d3.min.js"></script>
+    <script src="js/gauge.js"></script>
+    <script src="js/conic-gradient.js"></script>
     <script>
         const oConfig = {
           appId: "net.raspilab.experiments.device_info",
@@ -169,19 +221,23 @@
                 clientId: oConfig.authClientId
             });
 
-            console.log(oFeatureHub)
-
-            oFeatureHub.m_oSocketClient.addEventListener("socketClose", x => {
+            //TODO
+            oFeatureHub.m_oSocketClient.addEventListener("socketClose", () => {
                 elStatusModal.show(); 
+
+                term.writeln("UI Socket Disconnected.");
             });
 
-            oFeatureHub.addEventListener("connect", x => {
+            oFeatureHub.addEventListener("connect", () => {
                 elStatusModal.hide();
+
+                term.writeln("UI Socket Connected.");
             });
 
-            oFeatureHub.connect(function(oServerInfo){
-                 
+            oFeatureHub.connect(oServerInfo => {
                 oFeatureHub.devices(DeviceSelection.onReceiveDevices);
+
+                
 
                 term.writeln("Connected to " + oServerInfo.webSocketUrl);
             });
@@ -259,8 +315,7 @@
         };
 
         DeviceSelection.onSelectDevice = function(){
-          let elSelect = DeviceSelection.elSelect,
-              sMachineId = elSelect.value;
+          let sMachineId = DeviceSelection.elSelect.value;
           
           if(sMachineId){
             DeviceSelection.selectDevice(sMachineId);
@@ -279,70 +334,41 @@
 
 
             oFeatureHub.device(sMachineId, function(oData){
-              console.log(oData);
+                  console.log(oData);
                   const elLastComConnect = document.getElementById("last-com-connect");
-                  elLastComConnect.innerHTML = new Date(oData.device.lastComConnectDate).toLocaleString("en-US", { timeZone: 'UTC' });
+                  elLastComConnect.textContent = new Date(oData.device.lastComConnectDate).toLocaleString("en-US", { timeZone: 'UTC' });
 
+                  document.getElementById("kpi-deployments").textContent = oData.device.apps.length;
 
-                  const elDeployments = document.getElementById("deployments");
-                  if(oData.device.apps.length){
-                    
-                    var oTable = elDeployments.firstChild;
-                    if(!oTable){
-                        oTable = document.createElement("table");
-                        oTable.className = "table table-dark table-striped";
-                        elDeployments.appendChild(oTable);
-                    }
-                    else{
-                        oTable.removeChild(oTable.firstChild);
-                    }
-                    
-                    var oTableBody = document.createElement("tbody");
-                    
-                    let oTableRow = document.createElement("tr"),
-                          oTableCellAppId = document.createElement("th"),
-                          oTableCellAppName = document.createElement("th"),
-                          oTableCellStart = document.createElement("th");
+                  let elListItem,
+                    elListItemCell;
 
-                      oTableCellAppId.innerHTML = "ID";
-                      oTableCellAppName.innerHTML = "Name";
-                      oTableCellStart.innerHTML = "Start";
-                    
-                      oTableRow.appendChild(oTableCellAppName);
-                      oTableRow.appendChild(oTableCellAppId);
-                      oTableRow.appendChild(oTableCellStart);
-                      
-                      oTableBody.appendChild(oTableRow);
-
+                  const elDeployments = document.getElementById("deployments-list");
+                  
                     for(var i = 0; i < oData.device.apps.length; i++){
                         const oApp = oData.device.apps[i];
 
-                            oTableRow = document.createElement("tr");
-                                oTableCellAppId = document.createElement("td");
-                                oTableCellAppName = document.createElement("td");
-                                oTableCellStart = document.createElement("td");
                             
-                            oTableCellAppId.innerHTML = oApp.appId;
-                            oTableCellAppName.innerHTML = oApp.name;
 
-                            if(oData.appsToStart.indexOf(oApp.appId) !== -1){
-                                const oIcon = document.createElement("i");
-                                oIcon.className = "fas fa-check";
-                                oTableCellStart.appendChild(oIcon);
-                            }
-                            
-                            oTableRow.appendChild(oTableCellAppName);
-                            oTableRow.appendChild(oTableCellAppId);
-                            oTableRow.appendChild(oTableCellStart);
-                            
-                            oTableBody.appendChild(oTableRow);
+                            elListItem = document.createElement("li");
+                          elListItem.className = "list-group-item";
+
+                          elListItemCell = document.createElement("small");
+                          elListItemCell.className = "float-end";
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oData.appsToStart.indexOf(oApp.appId) !== -1;
+
+
+                          elListItemCell = document.createElement("div");
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oApp.name;
+
+                          elListItemCell = document.createElement("small");
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oApp.appId;
+                          
+                          elDeployments.append(elListItem);
                     }
-                    
-                    oTable.appendChild(oTableBody);
-                  }
-                  else{
-                    elDeployments.innerHTML = "";
-                  }
             }, function(){
 
             });
@@ -363,7 +389,7 @@
 
             oFeatureHub.send({ method:"requestStatus" }, { });
 
-            
+            fnGetSystemInfo();
         };
 
         /*
@@ -371,6 +397,19 @@
         */ 
          const elDeviceStatus = document.getElementById("device-status"),
          elSystemButtons = document.getElementById("system-buttons");
+
+         const oCpuGauge = new Gauge({
+                    el: '#cpu-gauge',
+                    label: 'CPU'
+                  }),
+                oMemoryGauge = new Gauge({
+                    el: '#memory-gauge',
+                    label: 'Memory'
+                  }),
+                oDiskGauge = new Gauge({
+                    el: '#disk-gauge',
+                    label: 'Disk'
+                  });
 
         let onReceiveDeviceStatus = function(oData, mHeaders){
             
@@ -401,75 +440,87 @@
                     elSystemButtons.style.display = "none";
                 }
 
-                const elScripts = document.getElementById("scripts");
+                
+
+
+                const elScriptsList = document.getElementById("scripts-list"),
+                  elAppsList = document.getElementById("apps-list"),
+                  elKpiAppsRunning = document.getElementById("kpi-apps-running"),
+                  elKpiScriptsRunning = document.getElementById("kpi-scripts-running");
+
+                elScriptsList.replaceChildren();
+                elAppsList.replaceChildren();
 
                 if(oDeviceStatus){
-                  document.getElementById("kpi-apps-running").innerHTML = oDeviceStatus.appsRunning;
-                  document.getElementById("kpi-scripts-running").innerHTML = oDeviceStatus.scriptsRunning;
+                  elKpiAppsRunning.innerHTML = oDeviceStatus.appsRunning;
+                  elKpiAppsRunning.style.display = 'inline-block';
+                  elKpiScriptsRunning.innerHTML = oDeviceStatus.scriptsRunning;
+                  elKpiScriptsRunning.style.display = 'inline-block';
                   document.getElementById("kpi-led-status").innerHTML = oData.ledStatusEnabled ? "enabled" : "disabled";
                   
-                  var oTable = elScripts.firstChild;
-                  if(!oTable){
-                      oTable = document.createElement("table");
-                      oTable.className = "table table-dark table-striped";
-                      elScripts.appendChild(oTable);
-                  }
-                  else{
-                      oTable.removeChild(oTable.firstChild);
-                  }
-                  var oTableBody = document.createElement("tbody");
-
-                  let oTableRow = document.createElement("tr"),
-                        oTableCellAppId = document.createElement("th"),
-                        oTableCellScriptName = document.createElement("th"),
-                        oTableCellPid = document.createElement("th");
-
-                        oTableCellAppId.innerHTML = "ID";
-                          oTableCellScriptName.innerHTML = "Name";
-                          oTableCellPid.innerHTML = "PID";
-                          
-                          oTableRow.appendChild(oTableCellPid);
-                          oTableRow.appendChild(oTableCellScriptName);
-                          oTableRow.appendChild(oTableCellAppId);
-                      
-                      oTableBody.appendChild(oTableRow);
-                  
+                  let elListItem,
+                    elListItemCell;
                   for(var i = 0; i < oDeviceStatus.apps.length; i++){
                       var oApp = oDeviceStatus.apps[i];
-                      for(var j = 0; j < oApp.scripts.length; j++){
-                          var oScript = oApp.scripts[j];
 
-                          oTableRow = document.createElement("tr");
-                              oTableCellAppId = document.createElement("td");
-                              oTableCellScriptName = document.createElement("td");
-                              oTableCellPid = document.createElement("td");
+                      elListItem = document.createElement("li");
+                      elListItem.className = "list-group-item";
+                      elListItem.textContent = oApp.appId;
+                      elAppsList.append(elListItem);
+
+                      for(let j = 0; j < oApp.scripts.length; j++){
+                          let oScript = oApp.scripts[j];
                           
-                          oTableCellAppId.innerHTML = oApp.appId;
-                          oTableCellScriptName.innerHTML = oScript.path;
-                          oTableCellPid.innerHTML = oScript.pid;
+                          elListItem = document.createElement("li");
+                          elListItem.className = "list-group-item";
+
+                          elListItemCell = document.createElement("small");
+                          elListItemCell.className = "float-end";
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oScript.pid;
+
+
+                          elListItemCell = document.createElement("div");
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oScript.path;
+
+                          elListItemCell = document.createElement("small");
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oApp.appId;
                           
-                          oTableRow.appendChild(oTableCellPid);
-                          oTableRow.appendChild(oTableCellScriptName);
-                          oTableRow.appendChild(oTableCellAppId);
-                          
-                          oTableBody.appendChild(oTableRow);
+                          elScriptsList.append(elListItem);
                       }
                   }
                   
-                  oTable.appendChild(oTableBody);
+                  
                 }
                 else{
-                  document.getElementById("kpi-apps-running").innerHTML = "";
-                  document.getElementById("kpi-scripts-running").innerHTML = "";
+                  elKpiAppsRunning.style.display = 'none';
+                  elKpiScriptsRunning.style.display = 'none';
                   document.getElementById("kpi-led-status").innerHTML = "";
-                  
-                  elScripts.innerHTML = "";
+                }
+            }
+            else if(sPhappId === "net.featurehub.phapp.sys"){
+                if(oData.cpu){
+                  oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1));
+                }
+                else{
+                  oCpuGauge.setValue();
                 }
 
-                  
-            }
-            else if(sPhappId === oConfig.pyAppId){
-                
+                if(oData.memory){
+                  oMemoryGauge.setValue(Number(100 - 100* oData.memory.virtual.available/oData.memory.virtual.total).toFixed(1));
+                }
+                else{
+                  oMemoryGauge.setValue();
+                }
+
+                if(oData.disk){
+                  oDiskGauge.setValue(Number(oData.disk.usage.percent).toFixed(1));
+                }
+                else{
+                  oDiskGauge.setValue();
+                }
             }
             else{
                 //Ignore messages from other PyApps on this device
@@ -481,46 +532,38 @@
         * Buttons
         */
         let elShutdownButton = document.getElementById("shutdown-button"),
-            elRebootButton = document.getElementById("reboot-button");
+            elRebootButton = document.getElementById("reboot-button"),
+            elExitButton = document.getElementById("exit-button"),
+            elDevToolsButton = document.getElementById("devtools-button");
 
         /*
         * Shutdown Button Click Handler
         */    
         elShutdownButton.addEventListener("click", function(){
-          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysbridge.py", method: "sendMessage" }, { "action": "SHUTDOWN" });
+            oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "SHUTDOWN" });
         });
 
         /*
         * Reboot Button Click Handler
         */
         elRebootButton.addEventListener("click", function(){
-          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysbridge.py", method: "sendMessage" }, { "action": "REBOOT" });
+            oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "REBOOT" });
         });
 
-        /*
-        * Show Exit Button when shown inside an display
-        */
-       const elElectronButtons = document.getElementById("electron-buttons");
-        if(typeof BletaElectron !== "undefined"){
-          
-          elElectronButtons.style.display = "inline-block";
+        elExitButton.addEventListener("click", function(){
+            oFeatureHub.send({ method: "exitGracefully" }, {});
+        });
 
-          /*
-          * Exit Button Handler
-          */
-          const elExitButton = document.getElementById("exit-button");
-          elExitButton.addEventListener("click", function(){
-            BletaElectron.gracefulExit();
-          });
+        elDevToolsButton.addEventListener("click", function(){
+            oFeatureHub.send({ method: "toggleDevTools" }, {});
+        });
 
-          const elDevtoolsButton = document.getElementById("devtools-button");
-          elDevtoolsButton.addEventListener("click", function(){
-            BletaElectron.toggleDevTools();
-          });
-        }
-        else{
-          elElectronButtons.style.display = "none";
-        }
+        const fnGetSystemInfo = () => {
+          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysinfo.py", method: "sendMessage" }, { "action": "STATUS" });
+        };
+
+        setInterval(fnGetSystemInfo, 10000);
+        
     </script>
 
     
