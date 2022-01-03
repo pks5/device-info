@@ -36,7 +36,7 @@
 
       #terminal{
           background-color: black;
-          height:160px;
+          overflow: hidden;
       }
 
 
@@ -79,7 +79,7 @@
     
     <nav class="navbar fixed-top navbar-light bg-light navbar-expand-md">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#"><span id="device-status"></span></a>
+        <a id="navbar-brand" class="navbar-brand" href="#"><span id="os-icon" class="fab fa-linux"></span>&nbsp;<span id="device-status"></span></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -90,12 +90,13 @@
           
           
           
-            
+          <div class="me-1 navbar-text"><span id="kpi-led-status">disabled</span></div>
             
           
           
           <div class="d-flex ms-auto align-items-center">
-            <div class="me-1"><span id="os-icon" class="fab fa-linux"></span><span id="kpi-led-status">disabled</span></div>
+            
+            <i class="fas fa-microchip me-1"></i>
             <select class="form-select me-1" id="deviceSelect">
               <option selected>Select Device</option>
             </select>
@@ -134,7 +135,7 @@
             </ul>
           </div>
         </div>
-        <div class="col-md">
+        <div class="col-md mt-2 mt-md-0">
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Apps <span id="kpi-apps-running" class="badge bg-secondary"></span></h5>
@@ -145,7 +146,7 @@
             </ul>
           </div>
         </div>
-        <div class="col-md">
+        <div class="col-md mt-2 mt-md-0">
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Scripts <span id="kpi-scripts-running" class="badge bg-secondary"></span></h5>
@@ -160,13 +161,10 @@
     </div>
 
 
-    <div>
-      
-      
-      <div id="terminal" class="p-2">
+    <div id="terminal" class="p-2 mt-3">
         <div id="xterm-container"></div>
       </div>
-    </div>
+    
 
     
 
@@ -353,6 +351,7 @@
                             elListItem = document.createElement("li");
                           elListItem.className = "list-group-item";
 
+                          
                           elListItemCell = document.createElement("small");
                           elListItemCell.className = "float-end";
                           elListItem.append(elListItemCell);
@@ -396,6 +395,7 @@
         * Triggered when a Device Status Message has been received
         */ 
          const elDeviceStatus = document.getElementById("device-status"),
+              elNavBarBrand = document.getElementById("navbar-brand"),
          elSystemButtons = document.getElementById("system-buttons");
 
          const oCpuGauge = new Gauge({
@@ -429,15 +429,21 @@
                     console.log("Device %s is connected.", sMachineId);
                     
                     elDeviceStatus.innerHTML = "CONNECTED";
-                    elDeviceStatus.className = "text-success";
+                    elNavBarBrand.classList.add("text-success");
+                    elNavBarBrand.classList.remove("text-danger");
                     elSystemButtons.style.display = "block";
                 }
                 else{
                     
                     console.log("Device %s is disconnected.", sMachineId);
                     elDeviceStatus.innerHTML = "DISCONNECTED";
-                    elDeviceStatus.className = "text-danger";
+                    elNavBarBrand.classList.remove("text-success");
+                    elNavBarBrand.classList.add("text-danger");
                     elSystemButtons.style.display = "none";
+
+                    oCpuGauge.setValue();
+                    oMemoryGauge.setValue();
+                    oDiskGauge.setValue();
                 }
 
                 
@@ -463,9 +469,23 @@
                   for(var i = 0; i < oDeviceStatus.apps.length; i++){
                       var oApp = oDeviceStatus.apps[i];
 
+                      
+
                       elListItem = document.createElement("li");
-                      elListItem.className = "list-group-item";
-                      elListItem.textContent = oApp.appId;
+                          elListItem.className = "list-group-item";
+
+                          elListItemCell = document.createElement("small");
+                          elListItemCell.className = "float-end";
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = "stop";
+
+
+                          elListItemCell = document.createElement("div");
+                          elListItem.append(elListItemCell);
+                          elListItemCell.textContent = oApp.appId;
+
+                         
+
                       elAppsList.append(elListItem);
 
                       for(let j = 0; j < oApp.scripts.length; j++){

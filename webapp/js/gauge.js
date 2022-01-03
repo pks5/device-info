@@ -148,7 +148,7 @@ const Gauge = function(mOptions){
     this.m_elNeedle = chart.append('path')
       .attr('class', 'gaugeChart-needle')
       .attr('stroke-width', this.m_mConstants.outerBezelWidth)
-      
+      .style('visibility', "hidden")
       .attr('d', `M ${this.m_mConstants.center - this.m_mConstants.needleWidth / 2} ${this.m_mConstants.center}
                   L ${this.m_mConstants.center} ${this.m_mConstants.tickHeight}
                   L ${this.m_mConstants.center + this.m_mConstants.needleWidth / 2} ${this.m_mConstants.center} Z`)
@@ -170,10 +170,14 @@ Gauge.prototype.setValue = function(nValue){
     if(typeof nValue === 'undefined' || nValue === null){
         nValue = 0;
         sValueText = "";
+        this.m_elNeedle.style('visibility', "hidden");
+    }
+    else{
+        this.m_elNeedle.style('visibility', "visible");
     }
     this.m_elValueLabel.text(sValueText + "%");
-    this.m_elNeedle.style('transition', "transform 0.5s ease-in-out");
-    //this.m_elNeedle.style("transform-origin", "${this.m_mConstants.center} ${this.m_mConstants.center}");
+    
+    
     this.m_elNeedle.attr('transform', `rotate(${this.m_fnNeedleScale(nValue)} ${this.m_mConstants.center} ${this.m_mConstants.center})`);
 };
 
