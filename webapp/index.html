@@ -428,7 +428,7 @@
                 if(oData.connected){
                     console.log("Device %s is connected.", sMachineId);
                     
-                    elDeviceStatus.innerHTML = "CONNECTED";
+                    elDeviceStatus.innerHTML = oData.hostInfo.hostName;
                     elNavBarBrand.classList.add("text-success");
                     elNavBarBrand.classList.remove("text-danger");
                     elSystemButtons.style.display = "block";
