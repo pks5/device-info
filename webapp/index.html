@@ -79,27 +79,30 @@
     
     <nav class="navbar fixed-top navbar-light bg-light navbar-expand-md">
       <div class="container-fluid">
-        <a id="navbar-brand" class="navbar-brand" href="#"><span id="os-icon" class="fab fa-linux"></span>&nbsp;<span id="device-status"></span></a>
+        <a id="navbar-brand" class="navbar-brand d-flex align-items-center py-0" href="#">
+            <i class="fas fa-microchip me-1"></i>
+            <select class="form-select" id="deviceSelect">
+              <option selected>Select Device</option>
+            </select>
+        </a>
+            
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
           <small class="navbar-text">
-            since <span id="last-com-connect"></span> UTC
+            <span id="last-com-connect"></span>
           </small>
           
           
           
-          <div class="me-1 navbar-text"><span id="kpi-led-status">disabled</span></div>
+          
             
           
           
           <div class="d-flex ms-auto align-items-center">
-            
-            <i class="fas fa-microchip me-1"></i>
-            <select class="form-select me-1" id="deviceSelect">
-              <option selected>Select Device</option>
-            </select>
+            <div class="me-1 navbar-text"><span id="kpi-led-status">disabled</span></div>
             <div id="system-buttons" class="d-flex" style="display: none;">
               <button class="btn btn-outline-dark me-1" id="shutdown-button"><i class="fas fa-power-off"></i></button>
               <button class="btn btn-outline-dark me-1" id="reboot-button"><i class="fas fa-sync-alt"></i></button>
@@ -195,7 +198,27 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7.2.1/dist/d3.min.js"></script>
     <script src="js/gauge.js"></script>
     <script src="js/conic-gradient.js"></script>
+    <script src="js/countdown.min.js"></script>
     <script>
+        const elNavBarBrand = document.getElementById("navbar-brand"),
+              elSystemButtons = document.getElementById("system-buttons"),
+            elLastComConnect = document.getElementById("last-com-connect");
+                  
+
+         const oCpuGauge = new Gauge({
+                    el: '#cpu-gauge',
+                    label: 'CPU'
+                  }),
+                oMemoryGauge = new Gauge({
+                    el: '#memory-gauge',
+                    label: 'Memory'
+                  }),
+                oDiskGauge = new Gauge({
+                    el: '#disk-gauge',
+                    label: 'Disk'
+                  });
+
+
         const oConfig = {
           appId: "net.raspilab.experiments.device_info",
           deviceHostName: "jojojo",
@@ -316,12 +339,13 @@
           let sMachineId = DeviceSelection.elSelect.value;
           
           if(sMachineId){
+            term.clear();
             DeviceSelection.selectDevice(sMachineId);
           }
         };
 
         DeviceSelection.selectDevice = function(sMachineId){
-            term.clear();
+            
 
           /*
             * Setup Default Target
@@ -333,8 +357,25 @@
 
             oFeatureHub.device(sMachineId, function(oData){
                   console.log(oData);
-                  const elLastComConnect = document.getElementById("last-com-connect");
-                  elLastComConnect.textContent = new Date(oData.device.lastComConnectDate).toLocaleString("en-US", { timeZone: 'UTC' });
+                  
+                  if(DeviceSelection.m_oConnectCountdownTimer){
+                      clearInterval(DeviceSelection.m_oConnectCountdownTimer);
+                      delete DeviceSelection.m_oConnectCountdownTimer;
+                  }
+
+                      if(oData.device.comConnected){
+                          DeviceSelection.m_oConnectCountdownTimer =
+                            countdown(
+                                new Date(oData.device.lastComConnectDate),
+                                function(ts) {
+                                  elLastComConnect.innerHTML = "connected since " + ts.toHTML("strong");
+                                },
+                                countdown.HOURS|countdown.MINUTES|countdown.SECONDS
+                            );
+                      }
+                      else{
+                        elLastComConnect.innerHTML = "disconnected"; 
+                      }
 
                   document.getElementById("kpi-deployments").textContent = oData.device.apps.length;
 
@@ -394,23 +435,6 @@
         /*
         * Triggered when a Device Status Message has been received
         */ 
-         const elDeviceStatus = document.getElementById("device-status"),
-              elNavBarBrand = document.getElementById("navbar-brand"),
-         elSystemButtons = document.getElementById("system-buttons");
-
-         const oCpuGauge = new Gauge({
-                    el: '#cpu-gauge',
-                    label: 'CPU'
-                  }),
-                oMemoryGauge = new Gauge({
-                    el: '#memory-gauge',
-                    label: 'Memory'
-                  }),
-                oDiskGauge = new Gauge({
-                    el: '#disk-gauge',
-                    label: 'Disk'
-                  });
-
         let onReceiveDeviceStatus = function(oData, mHeaders){
             
 
@@ -428,17 +452,17 @@
                 if(oData.connected){
                     console.log("Device %s is connected.", sMachineId);
                     
-                    elDeviceStatus.innerHTML = oData.hostInfo.hostName;
-                    elNavBarBrand.classList.add("text-success");
-                    elNavBarBrand.classList.remove("text-danger");
                     elSystemButtons.style.display = "block";
+
+                    if(!DeviceSelection.m_bConnected){
+                        DeviceSelection.selectDevice(oData.host.machineId);
+                    }
                 }
                 else{
                     
                     console.log("Device %s is disconnected.", sMachineId);
-                    elDeviceStatus.innerHTML = "DISCONNECTED";
-                    elNavBarBrand.classList.remove("text-success");
-                    elNavBarBrand.classList.add("text-danger");
+                    elLastComConnect.innerHTML = "disconnected"; 
+
                     elSystemButtons.style.display = "none";
 
                     oCpuGauge.setValue();
@@ -447,7 +471,7 @@
                 }
 
                 
-
+                DeviceSelection.m_bConnected = oData.connected;
 
                 const elScriptsList = document.getElementById("scripts-list"),
                   elAppsList = document.getElementById("apps-list"),
@@ -474,10 +498,21 @@
                       elListItem = document.createElement("li");
                           elListItem.className = "list-group-item";
 
-                          elListItemCell = document.createElement("small");
-                          elListItemCell.className = "float-end";
+                          elListItemCell = document.createElement("a");
                           elListItem.append(elListItemCell);
-                          elListItemCell.textContent = "stop";
+
+                          elListItemCell.title = "Stop"
+                          elListItemCell.href = "#";
+                          elListItemCell.className = "float-end";
+                          elListItemCell.dataset.appId = oApp.appId;
+                          elListItemCell.addEventListener("click", function(ev) {
+                              oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
+                          });
+
+                          let elStopIcon = document.createElement("i");
+                          elStopIcon.className = "fas fa-stop";
+
+                          elListItemCell.append(elStopIcon);
 
 
                           elListItemCell = document.createElement("div");
