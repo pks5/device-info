@@ -37,6 +37,11 @@
       #terminal{
           background-color: black;
           overflow: hidden;
+          
+      }
+
+      #xterm-container{
+        height:200px;
       }
 
 
@@ -98,16 +103,32 @@
           
           
           
-            
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="#"><span id="kpi-led-status">disabled</span></a>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-dark  dropdown-menu-end" aria-labelledby="navbarDarkDropdownMenuLink">
+                <li><a class="dropdown-item" href="#" id="console-button">Console</a></li>
+                <li><a class="dropdown-item" href="#" id="shutdown-button"><i class="fas fa-power-off"></i> Shutdown</a></li>
+                <li><a class="dropdown-item" href="#" id="reboot-button"><i class="fas fa-sync-alt"></i> Reboot</a></li>
+                <li><a class="dropdown-item" href="#" id="exit-button"><i class="fas fa-door-open"></i> Remote Exit</a></li>
+                <li><a class="dropdown-item" href="#" id="devtools-button"><i class="fas fa-tools"></i> Remote DevTools</a></li>
+              </ul>
+            </li>
+          </ul>
           
           
-          <div class="d-flex ms-auto align-items-center">
+          <div class="d-flex ms-auto align-items-center d-none">
             <div class="me-1 navbar-text"><span id="kpi-led-status">disabled</span></div>
+            
             <div id="system-buttons" class="d-flex" style="display: none;">
-              <button class="btn btn-outline-dark me-1" id="shutdown-button"><i class="fas fa-power-off"></i></button>
-              <button class="btn btn-outline-dark me-1" id="reboot-button"><i class="fas fa-sync-alt"></i></button>
-              <button class="btn btn-outline-dark me-1" id="exit-button"><i class="fas fa-door-open"></i></button>
-              <button class="btn btn-outline-dark" id="devtools-button"><i class="fas fa-tools"></i></button>
+              <button class="btn btn-outline-dark me-1" id="exit-button"></button>
+              <button class="btn btn-outline-dark" id="devtools-button"></button>
             </div>
           </div>
         </div>
@@ -164,22 +185,35 @@
     </div>
 
 
-    <div id="terminal" class="p-2 mt-3">
-        <div id="xterm-container"></div>
-      </div>
+    
     
 
-    
+    <!-- Console Modal -->
+    <div class="modal fade" id="console-modal" tabindex="-1" aria-labelledby="console-modal-label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="console-modal-label">Console</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="xterm-container"></div>
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+    </div>
 
       
     
 
-    <!-- Modal -->
-    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <!-- Status Modal -->
+    <div class="modal fade" id="status-modal" tabindex="-1" aria-labelledby="status-modal-label" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="statusModalLabel">Error</h5>
+            <h5 class="modal-title" id="status-modal-label">Error</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -192,6 +226,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xterm@4.12.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@6.1.0/bundles/stomp.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
@@ -200,10 +235,26 @@
     <script src="js/conic-gradient.js"></script>
     <script src="js/countdown.min.js"></script>
     <script>
-        const elNavBarBrand = document.getElementById("navbar-brand"),
-              elSystemButtons = document.getElementById("system-buttons"),
-            elLastComConnect = document.getElementById("last-com-connect");
+        const elLastComConnect = document.getElementById("last-com-connect"),
+            elStatusModal = new bootstrap.Modal(document.getElementById('status-modal'), { backdrop: "static" }),
+            elConsoleModal = new bootstrap.Modal(document.getElementById('console-modal'), { backdrop: "static" }),
+            elConsoleButton = document.getElementById("console-button"),
+            elShutdownButton = document.getElementById("shutdown-button"),
+            elRebootButton = document.getElementById("reboot-button"),
+            elExitButton = document.getElementById("exit-button"),
+            elDevToolsButton = document.getElementById("devtools-button"),
+            elScriptsList = document.getElementById("scripts-list"),
+            elAppsList = document.getElementById("apps-list"),
+            elKpiAppsRunning = document.getElementById("kpi-apps-running"),
+            elKpiScriptsRunning = document.getElementById("kpi-scripts-running");
                   
+            document.getElementById('console-modal').addEventListener("shown.bs.modal", () => {
+            fitAddon.fit();
+          });
+          
+          elConsoleButton.addEventListener("click", ev => {
+              elConsoleModal.show();
+          });
 
          const oCpuGauge = new Gauge({
                     el: '#cpu-gauge',
@@ -226,11 +277,16 @@
         };
 
         const term = new Terminal();
+        
+
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+
         term.open(document.getElementById('xterm-container'));
 
-        const elStatusModal = new bootstrap.Modal(document.getElementById('statusModal'), {
-          backdrop: "static"
-        });
+        fitAddon.fit();
+
+        
         
         let oFeatureHub;
 
@@ -250,17 +306,18 @@
             });
 
             oFeatureHub.addEventListener("connect", () => {
+                console.log("UI Socket Connected.");
                 elStatusModal.hide();
 
                 term.writeln("UI Socket Connected.");
             });
 
+            term.writeln("Connecting to FeatureHub Cloud ...");
             oFeatureHub.connect(oServerInfo => {
-                oFeatureHub.devices(DeviceSelection.onReceiveDevices);
-
-                
-
                 term.writeln("Connected to " + oServerInfo.webSocketUrl);
+
+                term.writeln("Getting list of available devices ...");
+                oFeatureHub.devices(DeviceSelection.onReceiveDevices);
             });
         };
 
@@ -285,6 +342,7 @@
         };
 
         DeviceSelection.onReceiveDevices = function(oData){
+          term.writeln("Found " + oData.devices.length + " available devices.");
           let elSelect = DeviceSelection.elSelect,
               sCurrentValue = elSelect.value,
               bCurrentValueFound = false;
@@ -339,22 +397,13 @@
           let sMachineId = DeviceSelection.elSelect.value;
           
           if(sMachineId){
-            term.clear();
+            //term.clear();
             DeviceSelection.selectDevice(sMachineId);
           }
         };
 
-        DeviceSelection.selectDevice = function(sMachineId){
-            
-
-          /*
-            * Setup Default Target
-            */
-            oFeatureHub.setDefaultTarget({
-              device: sMachineId
-            });
-
-
+        DeviceSelection.deviceInfo = function(sMachineId){
+            term.writeln("Requesting device info " + sMachineId + " ...");
             oFeatureHub.device(sMachineId, function(oData){
                   console.log(oData);
                   
@@ -363,19 +412,19 @@
                       delete DeviceSelection.m_oConnectCountdownTimer;
                   }
 
-                      if(oData.device.comConnected){
-                          DeviceSelection.m_oConnectCountdownTimer =
-                            countdown(
-                                new Date(oData.device.lastComConnectDate),
-                                function(ts) {
-                                  elLastComConnect.innerHTML = "connected since " + ts.toHTML("strong");
-                                },
-                                countdown.HOURS|countdown.MINUTES|countdown.SECONDS
-                            );
-                      }
-                      else{
-                        elLastComConnect.innerHTML = "disconnected"; 
-                      }
+                  if(oData.device.comConnected){
+                      DeviceSelection.m_oConnectCountdownTimer =
+                        countdown(
+                            new Date(oData.device.lastComConnectDate),
+                            function(ts) {
+                              elLastComConnect.innerHTML = "connected since " + ts.toHTML("strong");
+                            },
+                            countdown.HOURS|countdown.MINUTES|countdown.SECONDS
+                        );
+                  }
+                  else{
+                    elLastComConnect.innerHTML = "disconnected"; 
+                  }
 
                   document.getElementById("kpi-deployments").textContent = oData.device.apps.length;
 
@@ -386,10 +435,8 @@
                   
                     for(var i = 0; i < oData.device.apps.length; i++){
                         const oApp = oData.device.apps[i];
-
-                            
-
-                            elListItem = document.createElement("li");
+                          
+                          elListItem = document.createElement("li");
                           elListItem.className = "list-group-item";
 
                           
@@ -412,6 +459,24 @@
             }, function(){
 
             });
+        };
+
+        DeviceSelection.selectDevice = function(sMachineId){
+            
+            if(sMachineId !== DeviceSelection.m_sSelectedDeviceMachineId){
+                term.writeln("Selected device " + sMachineId);
+            }
+            DeviceSelection.m_sSelectedDeviceMachineId = sMachineId;
+
+          /*
+            * Setup Default Target
+            */
+            oFeatureHub.setDefaultTarget({
+              device: sMachineId
+            });
+
+
+            
 
             /*
             * Subscribe to Console
@@ -432,52 +497,46 @@
             fnGetSystemInfo();
         };
 
-        /*
-        * Triggered when a Device Status Message has been received
-        */ 
-        let onReceiveDeviceStatus = function(oData, mHeaders){
-            
+        DeviceSelection.enableButtons = function(bEnabled){
+            elDevToolsButton.classList.toggle("disabled", !bEnabled);
+            elExitButton.classList.toggle("disabled", !bEnabled);
+            elShutdownButton.classList.toggle("disabled", !bEnabled);
+            elRebootButton.classList.toggle("disabled", !bEnabled);
+        };
 
-            let sFrom = new URL(mHeaders["fh-from"]),
-                aPathParts = sFrom.pathname.split("/"),
-                sMachineId = aPathParts[aPathParts.length-1],
-                sPhappId = sFrom.searchParams.get("app");
-
-                console.log('STATUS', sPhappId, oData, mHeaders);
-
-            if(!sPhappId){
-                oDeviceStatus = oData.status;
-                //A message without the PyApp id
-                //Information from the device itself
-                if(oData.connected){
+        DeviceSelection.updateConnectionStatus = function(sMachineId, bConnected){
+                if(bConnected){
                     console.log("Device %s is connected.", sMachineId);
-                    
-                    elSystemButtons.style.display = "block";
 
-                    if(!DeviceSelection.m_bConnected){
-                        DeviceSelection.selectDevice(oData.host.machineId);
+                    if(!DeviceSelection.m_sConnectedDeviceMachineId || (DeviceSelection.m_sConnectedDeviceMachineId !== sMachineId)){
+                        DeviceSelection.deviceInfo(sMachineId);
                     }
+
+                    DeviceSelection.m_sConnectedDeviceMachineId = sMachineId;
                 }
                 else{
                     
                     console.log("Device %s is disconnected.", sMachineId);
-                    elLastComConnect.innerHTML = "disconnected"; 
 
-                    elSystemButtons.style.display = "none";
+                    if(DeviceSelection.m_oConnectCountdownTimer){
+                      clearInterval(DeviceSelection.m_oConnectCountdownTimer);
+                      delete DeviceSelection.m_oConnectCountdownTimer;
+                    }
+
+                    elLastComConnect.innerHTML = "disconnected"; 
 
                     oCpuGauge.setValue();
                     oMemoryGauge.setValue();
                     oDiskGauge.setValue();
+
+                    delete DeviceSelection.m_sConnectedDeviceMachineId;
                 }
 
-                
-                DeviceSelection.m_bConnected = oData.connected;
+                DeviceSelection.enableButtons(bConnected);
+                DeviceSelection.m_bConnected = bConnected;
+        };
 
-                const elScriptsList = document.getElementById("scripts-list"),
-                  elAppsList = document.getElementById("apps-list"),
-                  elKpiAppsRunning = document.getElementById("kpi-apps-running"),
-                  elKpiScriptsRunning = document.getElementById("kpi-scripts-running");
-
+        DeviceSelection.updateRunningApps = function(oDeviceStatus){
                 elScriptsList.replaceChildren();
                 elAppsList.replaceChildren();
 
@@ -486,38 +545,35 @@
                   elKpiAppsRunning.style.display = 'inline-block';
                   elKpiScriptsRunning.innerHTML = oDeviceStatus.scriptsRunning;
                   elKpiScriptsRunning.style.display = 'inline-block';
-                  document.getElementById("kpi-led-status").innerHTML = oData.ledStatusEnabled ? "enabled" : "disabled";
+                  //document.getElementById("kpi-led-status").innerHTML = oData.ledStatusEnabled ? "enabled" : "disabled";
                   
-                  let elListItem,
-                    elListItemCell;
+                  let elListItem, elListItemCell;
                   for(var i = 0; i < oDeviceStatus.apps.length; i++){
-                      var oApp = oDeviceStatus.apps[i];
-
-                      
+                      let oApp = oDeviceStatus.apps[i];
 
                       elListItem = document.createElement("li");
-                          elListItem.className = "list-group-item";
+                      elListItem.className = "list-group-item";
 
-                          elListItemCell = document.createElement("a");
-                          elListItem.append(elListItemCell);
+                      elListItemCell = document.createElement("a");
+                      elListItem.append(elListItemCell);
 
-                          elListItemCell.title = "Stop"
-                          elListItemCell.href = "#";
-                          elListItemCell.className = "float-end";
-                          elListItemCell.dataset.appId = oApp.appId;
-                          elListItemCell.addEventListener("click", function(ev) {
-                              oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
-                          });
+                      elListItemCell.title = "Stop"
+                      elListItemCell.href = "#";
+                      elListItemCell.className = "float-end";
+                      elListItemCell.dataset.appId = oApp.appId;
+                      elListItemCell.addEventListener("click", function(ev) {
+                          oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
+                      });
 
-                          let elStopIcon = document.createElement("i");
-                          elStopIcon.className = "fas fa-stop";
+                      let elStopIcon = document.createElement("i");
+                      elStopIcon.className = "fas fa-stop";
 
-                          elListItemCell.append(elStopIcon);
+                      elListItemCell.append(elStopIcon);
 
 
-                          elListItemCell = document.createElement("div");
-                          elListItem.append(elListItemCell);
-                          elListItemCell.textContent = oApp.appId;
+                      elListItemCell = document.createElement("div");
+                      elListItem.append(elListItemCell);
+                      elListItemCell.textContent = oApp.appId;
 
                          
 
@@ -552,33 +608,75 @@
                 else{
                   elKpiAppsRunning.style.display = 'none';
                   elKpiScriptsRunning.style.display = 'none';
-                  document.getElementById("kpi-led-status").innerHTML = "";
+                  //document.getElementById("kpi-led-status").innerHTML = "";
                 }
-            }
-            else if(sPhappId === "net.featurehub.phapp.sys"){
-                if(oData.cpu){
-                  oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1));
-                }
-                else{
-                  oCpuGauge.setValue();
+        }
+
+        /*
+        * Triggered when a Device Status Message has been received
+        */ 
+        let onReceiveDeviceStatus = function(oData, mHeaders){
+            console.log('DEVICE STATUS', oData, mHeaders);
+
+            let sFromAsString = mHeaders["fh-from"],
+                sFrom = new URL(sFromAsString),
+                sToAsString = mHeaders["fh-to"],
+                sTo = new URL(sToAsString);
+
+                
+
+            
+            if(sFromAsString === "fhtp://system/"){
+                let aToPathParts = sTo.pathname.split("/"),
+                    sMachineId = aToPathParts[3];
+                
+                if(DeviceSelection.m_sSelectedDeviceMachineId && (DeviceSelection.m_sSelectedDeviceMachineId !== sMachineId)){
+                    console.warn("Received status from device %s, but it's not selected.", sMachineId);
+                    return;
                 }
 
-                if(oData.memory){
-                  oMemoryGauge.setValue(Number(100 - 100* oData.memory.virtual.available/oData.memory.virtual.total).toFixed(1));
-                }
-                else{
-                  oMemoryGauge.setValue();
-                }
-
-                if(oData.disk){
-                  oDiskGauge.setValue(Number(oData.disk.usage.percent).toFixed(1));
-                }
-                else{
-                  oDiskGauge.setValue();
-                }
+                DeviceSelection.updateConnectionStatus(sMachineId, false);
+                DeviceSelection.updateRunningApps();
             }
             else{
-                //Ignore messages from other PyApps on this device
+              let aFromPathParts = sFrom.pathname.split("/"),
+                sMachineId = aFromPathParts[aFromPathParts.length-1],
+                sPhappId = sFrom.searchParams.get("app");
+
+              if(!sPhappId){
+                  if(DeviceSelection.m_sSelectedDeviceMachineId && (DeviceSelection.m_sSelectedDeviceMachineId !== sMachineId)){
+                    console.warn("Received status from device %s, but it's not selected.", sMachineId);
+                    return;
+                  }
+
+                  DeviceSelection.updateConnectionStatus(sMachineId, oData.connected);
+                  DeviceSelection.updateRunningApps(oData.status);
+              }
+              else if(sPhappId === "net.featurehub.phapp.sys"){
+                  if(oData.cpu){
+                    oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1));
+                  }
+                  else{
+                    oCpuGauge.setValue();
+                  }
+
+                  if(oData.memory){
+                    oMemoryGauge.setValue(Number(100 - 100* oData.memory.virtual.available/oData.memory.virtual.total).toFixed(1));
+                  }
+                  else{
+                    oMemoryGauge.setValue();
+                  }
+
+                  if(oData.disk){
+                    oDiskGauge.setValue(Number(oData.disk.usage.percent).toFixed(1));
+                  }
+                  else{
+                    oDiskGauge.setValue();
+                  }
+              }
+              else{
+                  //Ignore messages from other PyApps on this device
+              }
             }
             
         };
@@ -586,11 +684,7 @@
          /*
         * Buttons
         */
-        let elShutdownButton = document.getElementById("shutdown-button"),
-            elRebootButton = document.getElementById("reboot-button"),
-            elExitButton = document.getElementById("exit-button"),
-            elDevToolsButton = document.getElementById("devtools-button");
-
+        
         /*
         * Shutdown Button Click Handler
         */    
@@ -603,6 +697,7 @@
         */
         elRebootButton.addEventListener("click", function(){
             oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "REBOOT" });
+            oFeatureHub.send({ method:"requestStatus" }, { });
         });
 
         elExitButton.addEventListener("click", function(){
