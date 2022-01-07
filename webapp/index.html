@@ -410,6 +410,7 @@
                   }
 
                   if(oData.device.comConnected){
+                    elLastComConnect.classList.remove("text-danger");
                       DeviceSelection.m_oConnectCountdownTimer =
                         countdown(
                             new Date(oData.device.lastComConnectDate),
@@ -421,6 +422,7 @@
                   }
                   else{
                     elLastComConnect.innerHTML = "disconnected"; 
+                    elLastComConnect.classList.add("text-danger");
                   }
 
                   document.getElementById("kpi-deployments").textContent = oData.device.apps.length;
@@ -510,6 +512,7 @@
         DeviceSelection.updateConnectionStatus = function(sMachineId, bConnected){
                 if(bConnected){
                     console.log("Device %s is connected.", sMachineId);
+                    elLastComConnect.classList.remove("text-danger");
 
                     if(!DeviceSelection.m_sConnectedDeviceMachineId || (DeviceSelection.m_sConnectedDeviceMachineId !== sMachineId)){
                         DeviceSelection.deviceInfo(sMachineId);
@@ -527,10 +530,11 @@
                     }
 
                     elLastComConnect.innerHTML = "disconnected"; 
+                    elLastComConnect.classList.add("text-danger");
 
-                    oCpuGauge.setValue();
-                    oMemoryGauge.setValue();
-                    oDiskGauge.setValue();
+                    oCpuGauge.setValue().setSpecs().setInfo();
+                    oMemoryGauge.setValue().setSpecs().setInfo();
+                    oDiskGauge.setValue().setSpecs().setInfo();
 
                     delete DeviceSelection.m_sConnectedDeviceMachineId;
                 }
@@ -653,29 +657,35 @@
                   DeviceSelection.updateConnectionStatus(sMachineId, oData.connected);
                   DeviceSelection.updateRunningApps(oData.status);
                   DeviceSelection.showFeatures(oData.features);
+
+                  oCpuGauge.setSpecs(oData.host.cpus.length+ "x " + oData.host.cpus[0].model).setInfo(Number(oData.host.cpus[0].speed / 1000).toFixed(1) + " Ghz");
+                  
               }
               else if(sPhappId === "net.featurehub.phapp.sys"){
                   if(oData.cpu){
-                    oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1)).setSpecs();
+                    oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1));
                   }
                   else{
-                    oCpuGauge.setValue().setSpecs();
+                    oCpuGauge.setValue();
                   }
 
                   if(oData.memory){
                     oMemoryGauge.setValue(Number(100 - 100* oData.memory.virtual.available/oData.memory.virtual.total).toFixed(1))
-                              .setSpecs(Number(oData.memory.virtual.used / 1048576).toFixed(1) + "MB of " + Number(oData.memory.virtual.total / 1048576).toFixed(1) + "MB");
+                    //.setSpecs(Number(oData.memory.virtual.total / 1048576).toFixed(1) + "MB total");          
+                    .setSpecs(Number(oData.memory.virtual.total / 1048576).toFixed(1) + " MB")
+                    .setInfo(Number(oData.memory.virtual.used / 1048576).toFixed(1) + " MB used", Number(oData.memory.virtual.available / 1048576).toFixed(1) + " MB available");
                   }
                   else{
-                    oMemoryGauge.setValue().setSpecs();
+                    oMemoryGauge.setValue().setSpecs().setInfo();
                   }
 
                   if(oData.disk){
                     oDiskGauge.setValue(Number(oData.disk.usage.percent).toFixed(1))
-                    .setSpecs(Number(oData.disk.usage.used / 1073741824).toFixed(1) + "GB of " + Number(oData.disk.usage.total / 1073741824).toFixed(1) + "GB");
+                    .setSpecs(Number(oData.disk.usage.total / 1073741824).toFixed(1) + " GB")
+                    .setInfo(Number(oData.disk.usage.used / 1073741824).toFixed(1) + " GB used", Number(oData.disk.usage.free / 1073741824).toFixed(1) + " GB free");
                   }
                   else{
-                    oDiskGauge.setValue().setSpecs();
+                    oDiskGauge.setValue().setSpecs().setInfo();
                   }
               }
               else{

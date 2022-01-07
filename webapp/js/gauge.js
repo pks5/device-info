@@ -16,11 +16,14 @@ const Gauge = function(mOptions){
         tickHeight: outerBezelWidth + innerBezelWidth + (iWidth * 0.027),
         tickWidth: iWidth * 0.009,
         tickHiderRadius: iWidth * 0.345,
-        labelY: iCenter / 1.6,
-        specsY: iCenter / 1.25,
-        valueLabelY: iWidth * 0.78,
+        labelY: iCenter / 1.68,
+        specsY: iCenter / 1.3,
+        infoY: iCenter / 0.81,
+        info2Y: iCenter / 0.73,
+        valueLabelY: iWidth * 0.81,
         labelFontSize: iWidth * .08,
         specsFontSize: iWidth * .05,
+        infoFontSize: iWidth * .05,
         valueLabelFontSize: iWidth * .12,
         needleWidth: iWidth * 0.054,
         needleCapRadius: iWidth * 0.059,
@@ -146,7 +149,23 @@ const Gauge = function(mOptions){
       .attr('text-anchor', 'middle')
       .attr('alignment-baseline', 'middle')
       .attr('font-size', this.m_mConstants.specsFontSize);
-  
+
+      this.m_elInfoLabel = chart.append('text')
+      .attr('class', 'gaugeChart-label-specs')
+      .attr('x', this.m_mConstants.center)
+      .attr('y', this.m_mConstants.infoY)
+      .attr('text-anchor', 'middle')
+      .attr('alignment-baseline', 'middle')
+      .attr('font-size', this.m_mConstants.infoFontSize);
+
+      this.m_elInfo2Label = chart.append('text')
+      .attr('class', 'gaugeChart-label-specs')
+      .attr('x', this.m_mConstants.center)
+      .attr('y', this.m_mConstants.info2Y)
+      .attr('text-anchor', 'middle')
+      .attr('alignment-baseline', 'middle')
+      .attr('font-size', this.m_mConstants.infoFontSize);
+
     this.m_elValueLabel = chart.append('text')
       .attr('class', 'gaugeChart-label-value')
       .attr('x', this.m_mConstants.center)
@@ -179,22 +198,50 @@ Gauge.prototype.setSpecs = function(sSpecs){
     if(!sSpecs){
         sSpecs = "";
     }
-    this.m_elSpecsLabel.text(sSpecs);
+    let sSpecsText = sSpecs;
+    if(sSpecsText.length > 18){
+      sSpecsText = sSpecsText.substr(0, 18) + " ...";
+    }
+    this.m_elSpecsLabel.text(sSpecsText).append('svg:title').text(sSpecs);
 
     return this;
 };
 
+Gauge.prototype.setInfo = function(sInfo, sInfo2){
+  if(!sInfo){
+      sInfo = "";
+  }
+  if(!sInfo2){
+    sInfo2 = "";
+}
+  let sInfoText = sInfo,
+    sInfo2Text = sInfo2;
+  if(sInfoText.length > 18){
+    sInfoText = sInfoText.substr(0, 18) + " ...";
+  }
+
+  if(sInfo2Text.length > 18){
+    sInfo2Text = sInfo2Text.substr(0, 18) + " ...";
+  }
+
+  this.m_elInfoLabel.text(sInfoText).append('svg:title').text(sInfo);
+  this.m_elInfo2Label.text(sInfo2Text).append('svg:title').text(sInfo2);
+
+  return this;
+};
+
 Gauge.prototype.setValue = function(nValue){
     let sValueText = nValue;
-    if(typeof nValue === 'undefined' || nValue === null){
+    if(typeof nValue === 'undefined' || nValue === null || nValue === ""){
         nValue = 0;
         sValueText = "";
         this.m_elNeedle.style('visibility', "hidden");
     }
     else{
         this.m_elNeedle.style('visibility', "visible");
+        sValueText += "%";
     }
-    this.m_elValueLabel.text(sValueText + "%");
+    this.m_elValueLabel.text(sValueText);
     
     
     this.m_elNeedle.attr('transform', `rotate(${this.m_fnNeedleScale(nValue)} ${this.m_mConstants.center} ${this.m_mConstants.center})`);
