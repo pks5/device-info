@@ -16,9 +16,11 @@ const Gauge = function(mOptions){
         tickHeight: outerBezelWidth + innerBezelWidth + (iWidth * 0.027),
         tickWidth: iWidth * 0.009,
         tickHiderRadius: iWidth * 0.345,
-        labelY: iCenter / 1.5,
+        labelY: iCenter / 1.6,
+        specsY: iCenter / 1.25,
         valueLabelY: iWidth * 0.78,
         labelFontSize: iWidth * .08,
+        specsFontSize: iWidth * .05,
         valueLabelFontSize: iWidth * .12,
         needleWidth: iWidth * 0.054,
         needleCapRadius: iWidth * 0.059,
@@ -136,6 +138,14 @@ const Gauge = function(mOptions){
       .attr('alignment-baseline', 'middle')
       .attr('font-size', this.m_mConstants.labelFontSize)
       .text(this.m_mOptions.label);
+
+      this.m_elSpecsLabel = chart.append('text')
+      .attr('class', 'gaugeChart-label-specs')
+      .attr('x', this.m_mConstants.center)
+      .attr('y', this.m_mConstants.specsY)
+      .attr('text-anchor', 'middle')
+      .attr('alignment-baseline', 'middle')
+      .attr('font-size', this.m_mConstants.specsFontSize);
   
     this.m_elValueLabel = chart.append('text')
       .attr('class', 'gaugeChart-label-value')
@@ -165,6 +175,15 @@ const Gauge = function(mOptions){
       .attr('r', this.m_mConstants.needleCapRadius);
 };
 
+Gauge.prototype.setSpecs = function(sSpecs){
+    if(!sSpecs){
+        sSpecs = "";
+    }
+    this.m_elSpecsLabel.text(sSpecs);
+
+    return this;
+};
+
 Gauge.prototype.setValue = function(nValue){
     let sValueText = nValue;
     if(typeof nValue === 'undefined' || nValue === null){
@@ -179,6 +198,8 @@ Gauge.prototype.setValue = function(nValue){
     
     
     this.m_elNeedle.attr('transform', `rotate(${this.m_fnNeedleScale(nValue)} ${this.m_mConstants.center} ${this.m_mConstants.center})`);
+
+    return this;
 };
 
 
