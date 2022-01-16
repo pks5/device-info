@@ -174,10 +174,21 @@ const Gauge = function(mOptions){
       .attr('alignment-baseline', 'middle')
       .attr('font-size', this.m_mConstants.valueLabelFontSize);
   
-    this.m_elNeedle = chart.append('path')
+    this.m_elNeedle = chart.append("g")
+          .attr('class', 'gaugeChart-needle-container')
+          .style('visibility', "hidden")
+          .attr('transform', `rotate(${this.m_fnNeedleScale(0)})`); 
+
+    this.m_elNeedle.append('circle')
+    .style('visibility', "hidden")
+      .attr('cx', this.m_mConstants.center)
+      .attr('cy', this.m_mConstants.center)
+      .attr('r', 0.5*this.m_mConstants.width)
+
+    this.m_elNeedle.append('path')
       .attr('class', 'gaugeChart-needle')
       .attr('stroke-width', this.m_mConstants.outerBezelWidth)
-      .style('visibility', "hidden")
+      
       .attr('d', `M ${this.m_mConstants.center - this.m_mConstants.needleWidth / 2} ${this.m_mConstants.center}
                   L ${this.m_mConstants.center} ${this.m_mConstants.tickHeight}
                   L ${this.m_mConstants.center + this.m_mConstants.needleWidth / 2} ${this.m_mConstants.center} Z`)
@@ -244,7 +255,7 @@ Gauge.prototype.setValue = function(nValue){
     this.m_elValueLabel.text(sValueText);
     
     
-    this.m_elNeedle.attr('transform', `rotate(${this.m_fnNeedleScale(nValue)} ${this.m_mConstants.center} ${this.m_mConstants.center})`);
+    this.m_elNeedle.attr('transform', `rotate(${this.m_fnNeedleScale(nValue)})`);
 
     return this;
 };

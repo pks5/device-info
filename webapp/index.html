@@ -41,7 +41,7 @@
       }
 
       #xterm-container{
-        height:200px;
+        height:480px;
       }
 
 
@@ -70,8 +70,14 @@
     stroke: #CD4120;
     fill: #E57358;
     opacity: 0.8;
-    transition: transform 0.5s ease-in-out;
+    
    
+  }
+
+  .gaugeChart-needle-container {
+    transition: transform 0.5s ease-in-out;
+    transform-box: fill-box;
+    transform-origin: center;
   }
 
   .gaugeChart-needle-cap {
@@ -80,7 +86,7 @@
   }
     </style>
   </head>
-  <body>
+  <body class="pb-4">
     
     <nav class="navbar fixed-top navbar-light bg-light navbar-expand-md">
       <div class="container-fluid">
@@ -142,39 +148,52 @@
         </div>
       </div>
       <div class="row mt-3">
+
+        <!-- Scripts -->
         <div class="col-md">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Deployments <span id="kpi-deployments" class="badge bg-secondary"></span></h5>
-              <h6 class="card-subtitle mb-2 text-muted">User Apps deployed on this device</h6>
-            </div>
-            <ul id="deployments-list" class="list-group list-group-flush">
-              
-            </ul>
-          </div>
-        </div>
-        <div class="col-md mt-2 mt-md-0">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Apps <span id="kpi-apps-running" class="badge bg-secondary"></span></h5>
-              <h6 class="card-subtitle mb-2 text-muted">Apps running on this device</h6>
-            </div>
-            <ul id="apps-list" class="list-group list-group-flush">
-              
-            </ul>
-          </div>
-        </div>
-        <div class="col-md mt-2 mt-md-0">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Scripts <span id="kpi-scripts-running" class="badge bg-secondary"></span></h5>
-              <h6 class="card-subtitle mb-2 text-muted">Scripts running on this device</h6>
+              <h5 class="card-title mb-0 d-flex justify-content-between" title="Scripts running on this device">
+                <span>Scripts</span>
+                <span id="kpi-scripts-running" class="badge bg-secondary"></span>
+              </h5>
             </div>
             <ul id="scripts-list" class="list-group list-group-flush">
               
             </ul>
           </div>
         </div>
+        
+        <!-- Apps -->
+        <div class="col-md mt-2 mt-md-0">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title mb-0 d-flex justify-content-between" title="Apps running on this device">
+                <span>Apps</span>
+                <span id="kpi-apps-running" class="badge bg-secondary"></span>
+              </h5>
+            </div>
+            <ul id="apps-list" class="list-group list-group-flush">
+              
+            </ul>
+          </div>
+        </div>
+
+        <!-- Deployments -->
+        <div class="col-md mt-2 mt-md-0">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title mb-0 d-flex justify-content-between" title="User Apps deployed on this device">
+                <span>Deployments</span>
+                <span id="kpi-deployments" class="badge bg-secondary"></span>
+              </h5>
+            </div>
+            <ul id="deployments-list" class="list-group list-group-flush">
+              
+            </ul>
+          </div>
+        </div>
+        
       </div>
     </div>
 
@@ -243,7 +262,9 @@
             elKpiScriptsRunning = document.getElementById("kpi-scripts-running"),
             elFeaturePower = document.getElementById("feature-power"),
             elFeatureSysInfo = document.getElementById("feature-sysinfo"),
-            elFeatureStatusLed = document.getElementById("feature-status-led");
+            elFeatureStatusLed = document.getElementById("feature-status-led"),
+            elDeployments = document.getElementById("deployments-list"),
+            elKpiDeployments = document.getElementById("kpi-deployments");
                   
             document.getElementById('console-modal').addEventListener("shown.bs.modal", () => {
             fitAddon.fit();
@@ -280,6 +301,14 @@
         term.loadAddon(fitAddon);
 
         term.open(document.getElementById('xterm-container'));
+
+        /*
+        term.attachCustomKeyEventHandler(data => {
+            console.log(data)
+            term.write(data.key);
+        });
+        */
+
 
         fitAddon.fit();
 
@@ -425,13 +454,17 @@
                     elLastComConnect.classList.add("text-danger");
                   }
 
-                  document.getElementById("kpi-deployments").textContent = oData.device.apps.length;
+                  elKpiDeployments.textContent = oData.device.apps.length;
+
+                  
 
                   let elListItem,
                     elListItemCell;
 
-                  const elDeployments = document.getElementById("deployments-list");
                   
+                  elDeployments.replaceChildren();
+                  
+                  if(oData.device.apps.length){
                     for(var i = 0; i < oData.device.apps.length; i++){
                         const oApp = oData.device.apps[i];
                           
@@ -455,6 +488,13 @@
                           
                           elDeployments.append(elListItem);
                     }
+                  }
+                  else{
+                      elListItem = document.createElement("li");
+                      elListItem.className = "list-group-item disabled";
+                      elListItem.textContent = "No apps deployed on this device";
+                      elDeployments.append(elListItem);
+                  }
             }, function(){
 
             });
@@ -543,9 +583,11 @@
                 DeviceSelection.m_bConnected = bConnected;
         };
 
-        DeviceSelection.updateRunningApps = function(oDeviceStatus){
+        DeviceSelection.updateRunningApps = function(oDeviceStatus, sAppVersion){
                 elScriptsList.replaceChildren();
                 elAppsList.replaceChildren();
+
+                let elListItem, elListItemCell;
 
                 if(oDeviceStatus){
                   elKpiAppsRunning.innerHTML = oDeviceStatus.appsRunning;
@@ -554,38 +596,57 @@
                   elKpiScriptsRunning.style.display = 'inline-block';
                   //document.getElementById("kpi-led-status").innerHTML = oData.ledStatusEnabled ? "enabled" : "disabled";
                   
-                  let elListItem, elListItemCell;
+                  
                   for(var i = 0; i < oDeviceStatus.apps.length; i++){
                       let oApp = oDeviceStatus.apps[i];
 
+                      //Item
                       elListItem = document.createElement("li");
+                      elAppsList.append(elListItem);
                       elListItem.className = "list-group-item";
 
-                      elListItemCell = document.createElement("a");
+                      //Name & version
+                      elListItemCell = document.createElement("div");
                       elListItem.append(elListItemCell);
+                      elListItemCell.className = "d-flex justify-content-between";
+                      
+                      let elLeft = document.createElement("div");
+                      elListItemCell.append(elLeft);
+                      elLeft.textContent = oApp.name;
 
-                      elListItemCell.title = "Stop"
-                      elListItemCell.href = "#";
-                      elListItemCell.className = "float-end";
-                      elListItemCell.dataset.appId = oApp.appId;
-                      elListItemCell.addEventListener("click", function(ev) {
-                          oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
-                      });
-
-                      let elStopIcon = document.createElement("i");
-                      elStopIcon.className = "fas fa-stop";
-
-                      elListItemCell.append(elStopIcon);
-
+                      elLeft = document.createElement("div");
+                      elListItemCell.append(elLeft);
+                      elLeft.textContent = oApp.version ? oApp.version : sAppVersion;
 
                       elListItemCell = document.createElement("div");
                       elListItem.append(elListItemCell);
-                      elListItemCell.textContent = oApp.appId;
+                      elListItemCell.className = "d-flex justify-content-between";
 
-                         
+                      elLeft = document.createElement("small");
+                      elListItemCell.append(elLeft);
+                      elLeft.textContent = oApp.appId;
 
-                      elAppsList.append(elListItem);
+                      elLeft = document.createElement("div");
+                      elListItemCell.append(elLeft);
 
+                      if(oApp.type !== "SYSTEM"){
+                          //Stopp button
+                          elListItemCell = document.createElement("a");
+                          elLeft.append(elListItemCell);
+
+                          elListItemCell.title = "Stop"
+                          elListItemCell.href = "#";
+                          elListItemCell.dataset.appId = oApp.appId;
+                          elListItemCell.addEventListener("click", function(ev) {
+                              oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
+                          });
+
+                          let elStopIcon = document.createElement("i");
+                          elListItemCell.append(elStopIcon);
+                          elStopIcon.className = "fas fa-stop";
+                      }
+
+                      //Scripts
                       for(let j = 0; j < oApp.scripts.length; j++){
                           let oScript = oApp.scripts[j];
                           
@@ -604,7 +665,7 @@
 
                           elListItemCell = document.createElement("small");
                           elListItem.append(elListItemCell);
-                          elListItemCell.textContent = oApp.appId;
+                          elListItemCell.textContent = oApp.name;
                           
                           elScriptsList.append(elListItem);
                       }
@@ -615,6 +676,25 @@
                 else{
                   elKpiAppsRunning.style.display = 'none';
                   elKpiScriptsRunning.style.display = 'none';
+                  elKpiDeployments.style.display = 'none';
+
+                  elListItem = document.createElement("li");
+                  elListItem.className = "list-group-item disabled";
+                  elListItem.textContent = "Device is disconnected";
+                  elScriptsList.append(elListItem);
+
+                  elListItem = document.createElement("li");
+                  elListItem.className = "list-group-item disabled";
+                  elListItem.textContent = "Device is disconnected";
+                  elAppsList.append(elListItem);
+
+
+                  elDeployments.replaceChildren();
+
+                  elListItem = document.createElement("li");
+                  elListItem.className = "list-group-item disabled";
+                  elListItem.textContent = "Device is disconnected";
+                  elDeployments.append(elListItem);
                   //document.getElementById("kpi-led-status").innerHTML = "";
                 }
         }
@@ -655,10 +735,10 @@
                   }
 
                   DeviceSelection.updateConnectionStatus(sMachineId, oData.connected);
-                  DeviceSelection.updateRunningApps(oData.status);
+                  DeviceSelection.updateRunningApps(oData.status, oData.client.versions.app);
                   DeviceSelection.showFeatures(oData.features);
 
-                  oCpuGauge.setSpecs(oData.host.cpus.length+ "x " + oData.host.cpus[0].model).setInfo(Number(oData.host.cpus[0].speed / 1000).toFixed(1) + " Ghz");
+                  oCpuGauge.setSpecs(oData.host.cpus.length+ " x " + oData.host.cpus[0].model).setInfo(Number(oData.host.cpus[0].speed / 1000).toFixed(1) + " Ghz");
                   
               }
               else if(sPhappId === "net.featurehub.phapp.sys"){
@@ -672,7 +752,7 @@
                   if(oData.memory){
                     oMemoryGauge.setValue(Number(100 - 100* oData.memory.virtual.available/oData.memory.virtual.total).toFixed(1))
                     //.setSpecs(Number(oData.memory.virtual.total / 1048576).toFixed(1) + "MB total");          
-                    .setSpecs(Number(oData.memory.virtual.total / 1048576).toFixed(1) + " MB")
+                    .setSpecs(Number(oData.memory.virtual.total / 1048576).toFixed(1) + " MB total")
                     .setInfo(Number(oData.memory.virtual.used / 1048576).toFixed(1) + " MB used", Number(oData.memory.virtual.available / 1048576).toFixed(1) + " MB available");
                   }
                   else{
@@ -681,7 +761,7 @@
 
                   if(oData.disk){
                     oDiskGauge.setValue(Number(oData.disk.usage.percent).toFixed(1))
-                    .setSpecs(Number(oData.disk.usage.total / 1073741824).toFixed(1) + " GB")
+                    .setSpecs(Number(oData.disk.usage.total / 1073741824).toFixed(1) + " GB total")
                     .setInfo(Number(oData.disk.usage.used / 1073741824).toFixed(1) + " GB used", Number(oData.disk.usage.free / 1073741824).toFixed(1) + " GB free");
                   }
                   else{
