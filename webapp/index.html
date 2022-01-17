@@ -35,13 +35,20 @@
       
 
       #terminal{
-          background-color: black;
-          overflow: hidden;
+         
+          
           
       }
 
       #xterm-container{
-        height:480px;
+        height:440px;
+        overflow: hidden;
+        background-color: black;
+      }
+
+      #console-input{
+        width:100%;
+        height:100px;
       }
 
 
@@ -211,8 +218,23 @@
           </div>
           <div class="modal-body">
             <div id="xterm-container"></div>
+            
           </div>
           <div class="modal-footer">
+            <div class="flex-fill">
+              <div>
+                <select class="form-select" id="script-select">
+                  
+                </select>
+              </div>
+              <div>
+                <textarea id="console-input"></textarea>
+              </div>
+              <div>
+                <button id="console-send-button" class="btn btn-primary">Send</button>
+                <button id="console-clear-button" class="btn btn-secondary">Clear</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -257,6 +279,10 @@
             elExitButton = document.getElementById("exit-button"),
             elDevToolsButton = document.getElementById("devtools-button"),
             elScriptsList = document.getElementById("scripts-list"),
+            elScriptSelect = document.getElementById("script-select"),
+            elConsoleInput = document.getElementById("console-input"),
+            elConsoleSendButton = document.getElementById("console-send-button"),
+            elConsoleClearButton = document.getElementById("console-clear-button"),
             elAppsList = document.getElementById("apps-list"),
             elKpiAppsRunning = document.getElementById("kpi-apps-running"),
             elKpiScriptsRunning = document.getElementById("kpi-scripts-running"),
@@ -272,6 +298,30 @@
           
           elConsoleButton.addEventListener("click", ev => {
               elConsoleModal.show();
+          });
+
+          elConsoleSendButton.addEventListener("click", ev => {
+              let aParts = elScriptSelect.value.split(";"),
+                  sAppId = aParts[0],
+                  sScriptPath = aParts[1];
+
+              try {
+                  let oPayload = JSON.parse(elConsoleInput.value);
+
+                  oFeatureHub.send({ "app":sAppId, "script":sScriptPath, method: "sendMessage" }, oPayload);
+                  term.writeln("Sent " + JSON.stringify(oPayload) + " to " + sAppId + "/" + sScriptPath);
+              } catch (e) {
+                  if (e instanceof SyntaxError) {
+                      alert("SYNTAX ERROR!");
+                  }
+                  else{
+                    throw e;
+                  }
+              }
+          });
+
+          elConsoleClearButton.addEventListener("click", ev => {
+            elConsoleInput.value = "";
           });
 
          const oCpuGauge = new Gauge({
@@ -522,7 +572,7 @@
             */
             oFeatureHub.unsubscribe('deviceConsole');
             oFeatureHub.subscribe('deviceConsole', sMachineId + "/console", function(oData, mHeaders){
-                term.writeln(oData.args[0]); 
+                term.writeln("[" + sMachineId.substr(0, 6) + "] " + oData.args[0]); 
             });
 
             /*
@@ -586,6 +636,7 @@
         DeviceSelection.updateRunningApps = function(oDeviceStatus, sAppVersion){
                 elScriptsList.replaceChildren();
                 elAppsList.replaceChildren();
+                elScriptSelect.replaceChildren();
 
                 let elListItem, elListItemCell;
 
@@ -648,7 +699,13 @@
 
                       //Scripts
                       for(let j = 0; j < oApp.scripts.length; j++){
-                          let oScript = oApp.scripts[j];
+                          let oScript = oApp.scripts[j],
+
+                          elOpt = document.createElement('option');
+            
+                          elOpt.value = oApp.appId + ";" + oScript.path;
+                          elOpt.innerHTML = oApp.appId + " - " +  oScript.path;
+                          elScriptSelect.appendChild(elOpt);
                           
                           elListItem = document.createElement("li");
                           elListItem.className = "list-group-item";

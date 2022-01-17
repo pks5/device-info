@@ -1,0 +1,13 @@
+{
+    "app" : {
+        "version": "0.9",
+        "id": "net.featurehub.phapp.button_led",
+        "name": "Button & Led"
+    },
+
+    "scripts" : [
+        { "path": "ky-004.py", "executable": true, "gpio": "rpi2"},
+        { "path": "ky-008.py", "executable": true, "gpio": "rpi2"}
+    ]
+
+}
