@@ -13,6 +13,7 @@ class Ky004:
             "pin": 5,
             "hold_time": 1,
             "bounce_time": None,
+            "retry_time": 1,
             "log_level": logging.INFO
         }
         self.listener_thread_running = False
@@ -75,10 +76,10 @@ class Ky004:
                 return
     
     def listen_target(self):
-        try:
-            print("Listening for button presses ...", flush=True)
-            self.listener_thread_running = True
-            while self.listener_thread_running:
+        print("Listening for button presses ...", flush=True)
+        self.listener_thread_running = True
+        while self.listener_thread_running:
+            try:
                 if(not self.listener_thread_paused):
                     if(self.settings["log_level"] < logging.INFO):
                         if(self.device.is_pressed):
@@ -87,12 +88,12 @@ class Ky004:
                             print("Button is released.", flush=True)
                     self.update_state()
                 time.sleep(self.settings["hold_time"])
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print(e, file=sys.stderr, flush=True)
-        finally:
-            self.listener_thread_running = False
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                print(e, file=sys.stderr, flush=True)
+                time.sleep(self.settings["retry_time"])
+        print("Listener thread finished.", flush=True)
     
     def listen(self):
         if(self.listener_thread_running):
