@@ -11,7 +11,7 @@ class DHT:
         self.state = {}
         self.settings = {
             "notify_url": None,
-            "pin": 5,
+            "pin": 4,
             "scan_time": 1,
             "log_level": logging.INFO
         }
@@ -29,7 +29,8 @@ class DHT:
         print("<<" + json.dumps(payload), flush=True)
 
     def update_state(self):
-        self.state["is_pressed"] = self.device.is_pressed
+        self.state["temperature"] = self.device.temperature
+        self.state["humidity"] = self.device.humidity
 
         self.send({
             "state": self.state,
@@ -78,10 +79,10 @@ class DHT:
             self.listener_thread_running = True
             while self.listener_thread_running:
                 if(not self.listener_thread_paused):
-                    temperature_c = self.device.temperature
-                    temperature_f = temperature_c * (9 / 5) + 32
-                    humidity = self.device.humidity
                     if(self.settings["log_level"] < logging.INFO):
+                        temperature_c = self.device.temperature
+                        temperature_f = temperature_c * (9 / 5) + 32
+                        humidity = self.device.humidity
                         print(
                             "Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(
                                 temperature_f, temperature_c, humidity
@@ -107,9 +108,9 @@ class DHT:
             self.listener_thread_paused = True
             self.device.exit()
             print("Closed DHT device.", flush=True)
-        self.device = adafruit_dht.DHT11(board.D4) #adafruit_dht.DHT11(self.settings["pin"])
+        self.device = adafruit_dht.DHT11(self.settings["pin"]) #adafruit_dht.DHT11(self.settings["pin"])
         self.listener_thread_paused = False
-        print("Initialized DHT device on pin " + str(board.D4) + "/" + str(self.settings["pin"]), flush=True)
+        print("Initialized DHT device on pin " + str(self.settings["pin"]), flush=True)
 
 
     def cleanup(self):
