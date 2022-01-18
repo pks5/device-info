@@ -3,6 +3,7 @@ import json
 import sys
 import time
 import threading
+import logging
 
 class Ky004:
     def __init__(self):
@@ -11,7 +12,8 @@ class Ky004:
             "notify_url": None,
             "pin": 5,
             "hold_time": 1,
-            "bounce_time": None
+            "bounce_time": None,
+            "log_level": logging.INFO
         }
         self.listener_thread_running = False
         self.device = None
@@ -65,6 +67,8 @@ class Ky004:
                     self.settings["hold_time"] = given_settings["hold_time"]
                 if("bounce_time" in given_settings):
                     self.settings["bounce_time"] = given_settings["bounce_time"]
+                if("log_level" in given_settings):
+                    self.settings["log_level"] = given_settings["log_level"]
                 self.init()
                 self.update_state()
                 return
@@ -74,6 +78,11 @@ class Ky004:
             print("Listening for button presses ...", flush=True)
             self.listener_thread_running = True
             while True:
+                if(self.settings["log_level"] < logging.INFO):
+                    if(self.device.is_pressed):
+                        print("Button is pressed.", flush=True)
+                    else:
+                        print("Button is released.", flush=True)
                 self.update_state()
                 time.sleep(self.settings["hold_time"])
 
@@ -91,14 +100,14 @@ class Ky004:
     def init(self):
         if(self.device is not None):
             self.device.close()
-            print("Closed button device.", flush=True)
+            print("Closed BUTTON device.", flush=True)
         self.device = gpiozero.Button(self.settings["pin"], bounce_time=self.settings["bounce_time"])
-        print("Initialized button device on pin " + str(self.settings["pin"]), flush=True)
+        print("Initialized BUTTON device on pin " + str(self.settings["pin"]), flush=True)
 
     def cleanup(self):
         if(self.device is not None):
             self.device.close()
-            print("Closed button device.", flush=True)
+            print("Closed BUTTON device.", flush=True)
         
         print("Cleaned up.")
 
