@@ -7,8 +7,7 @@
 
     "scripts" : [
         { "path": "ky-004.py", "executable": true, "gpio": "rpi2"},
-        { "path": "led.py", "executable": true, "gpio": "rpi2"},
-        { "path": "dht.py", "executable": true, "gpio": "rpi2"}
+        { "path": "led.py", "executable": true, "gpio": "rpi2"}
     ]
 
 }

@@ -1,0 +1,12 @@
+{
+    "app" : {
+        "version": "0.9.1",
+        "id": "net.featurehub.phapp.dht",
+        "name": "Temperature & Humidity"
+    },
+
+    "scripts" : [
+        { "path": "dht.py", "executable": true, "gpio": "rpi2"}
+    ]
+
+}
