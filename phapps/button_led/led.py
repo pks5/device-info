@@ -10,7 +10,8 @@ class Ky008:
         self.settings = {
             "notify_url": None,
             "pin": 6,
-            "initial_value": False
+            "initial_value": False,
+            "frequency": 100
         }
         self.device = None
         self.mode = "DEFAULT"
@@ -94,7 +95,24 @@ class Ky008:
                     
                 self.device.blink(on_time=on_time, off_time=off_time, n=n)
                 self.mode = "BLINK"
-                print("LED is blinking.", flush=True)
+                print("LED is blinking with " + str(on_time) + "s/" + str(off_time) + "s", flush=True)
+                self.update_state()
+                return
+            
+            if(action == "PULSE"):
+                fade_in_time=1
+                fade_out_time=1
+                n=None
+                if("fade_in_time" in message_body):
+                    fade_in_time = message_body["fade_in_time"]
+                if("fade_out_time" in message_body):
+                    fade_out_time = message_body["fade_out_time"]
+                if("n" in message_body):
+                    n = message_body["n"]
+                    
+                self.device.pulse(fade_in_time=fade_in_time, fade_out_time=fade_out_time, n=n)
+                self.mode = "PULSE"
+                print("LED is pulsing with " + str(fade_in_time) + "s/" + str(fade_out_time) + "s", flush=True)
                 self.update_state()
                 return
             
@@ -103,6 +121,8 @@ class Ky008:
                 
                 if("pin" in given_settings):
                     self.settings["pin"] = given_settings["pin"]
+                if("frequency" in given_settings):
+                    self.settings["frequency"] = given_settings["frequency"]
                 if("initial_value" in given_settings):
                     self.settings["initial_value"] = given_settings["initial_value"]
                 
@@ -113,9 +133,9 @@ class Ky008:
     def init(self):
         if(self.device is not None):
             self.device.close()
-            print("Closed led device.", flush=True)
+            print("Closed LED device.", flush=True)
         
-        self.device = gpiozero.LED(self.settings["pin"], initial_value=self.settings["initial_value"])
+        self.device = gpiozero.PWMLED(self.settings["pin"], initial_value=self.settings["initial_value"])
         
         print("Initialized LED device on pin " + str(self.settings["pin"]), flush=True)
 

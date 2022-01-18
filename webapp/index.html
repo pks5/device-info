@@ -22,9 +22,8 @@
         
       }
       body{
-        background-image: url('./img/bg.jpg');
-        background-repeat: no-repeat;
-        background-size: cover;
+        background-image: url('./img/bg.jpeg');
+        background-repeat: repeat;
         background-position: center;
         padding-top:70px;
         font-family: 'Roboto', sans-serif;
@@ -32,7 +31,13 @@
         
       }
 
-      
+      .card{
+        border-color:#212529;
+      }
+
+      .modal-header{
+        padding:0.5rem 1rem;
+      }
 
       #terminal{
          
@@ -41,20 +46,27 @@
       }
 
       #xterm-container{
-        height:440px;
+        height:400px;
         overflow: hidden;
         background-color: black;
       }
 
       #console-input{
         width:100%;
-        height:100px;
+        height:140px;
+        
+      }
+
+      #console-input-container{
+        height:140px;
+        margin-bottom:0.25rem;
+        margin-top:0.25rem;
       }
 
 
       .gaugeChart-bezel-outer {
     fill: none;
-    stroke: black;
+    stroke: #212529;
   }
 
   .gaugeChart-bezel-inner {
@@ -64,7 +76,7 @@
 
   .gaugeChart-tick {
     fill: none;
-    stroke: black;
+    stroke: #212529;
   }
 
   .gaugeChart-face,
@@ -95,7 +107,7 @@
   </head>
   <body class="pb-4">
     
-    <nav class="navbar fixed-top navbar-light bg-light navbar-expand-md">
+    <nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-md">
       <div class="container-fluid">
         <a id="navbar-brand" class="navbar-brand d-flex align-items-center py-0" href="#">
             <i class="fas fa-microchip me-1"></i>
@@ -228,8 +240,9 @@
                   
                 </select>
               </div>
-              <div>
-                <textarea id="console-input"></textarea>
+              <div id="console-input-container">
+                <div id="console-input"></div>
+                <!--<textarea id="console-input"></textarea>-->
               </div>
               <div>
                 <button id="console-send-button" class="btn btn-primary">Send</button>
@@ -290,10 +303,15 @@
     <script src="js/gauge.js"></script>
     <script src="js/conic-gradient.js"></script>
     <script src="js/countdown.min.js"></script>
+    <script src="https://pagecdn.io/lib/ace/1.4.13/ace.min.js" crossorigin="anonymous" integrity="sha256-GjtAsBCI/KPlEYQf0I8yNimcThRoWMnk7Vpi+dUt+GY=" ></script>
     <script>
+      ace.config.set('basePath', 'https://pagecdn.io/lib/ace/1.4.13/')
+
+
         const elLastComConnect = document.getElementById("last-com-connect"),
             elStatusModal = new bootstrap.Modal(document.getElementById('status-modal'), { backdrop: "static" }),
-            elConsoleModal = new bootstrap.Modal(document.getElementById('console-modal'), { backdrop: "static" }),
+            elConsoleModalEl = document.getElementById('console-modal'),
+            elConsoleModal = new bootstrap.Modal(elConsoleModalEl, { backdrop: "static" }),
             elRunAppModal = new bootstrap.Modal(document.getElementById('run-app-modal'), { backdrop: "static" }),
             elConsoleButton = document.getElementById("console-button"),
             elRunAppModalButton = document.getElementById("run-app-modal-button"),
@@ -317,6 +335,11 @@
             elDeployments = document.getElementById("deployments-list"),
             elKpiDeployments = document.getElementById("kpi-deployments");
                   
+            const editor = ace.edit("console-input");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/json");
+            editor.setValue('{' + "\n" + '    "action": ""' + "\n" + '}');
+
             document.getElementById('console-modal').addEventListener("shown.bs.modal", () => {
             fitAddon.fit();
           });
@@ -339,10 +362,10 @@
                   sScriptPath = aParts[1];
 
               try {
-                  let oPayload = JSON.parse(elConsoleInput.value);
+                  let oPayload = JSON.parse(editor.getValue());
 
                   oFeatureHub.send({ "app":sAppId, "script":sScriptPath, method: "sendMessage" }, oPayload);
-                  term.writeln("Sent " + JSON.stringify(oPayload) + " to " + sAppId + "/" + sScriptPath);
+                  DeviceSelection.log("Sent " + JSON.stringify(oPayload) + " to " + sAppId + "/" + sScriptPath);
               } catch (e) {
                   if (e instanceof SyntaxError) {
                       alert("SYNTAX ERROR!");
@@ -353,8 +376,13 @@
               }
           });
 
+          elConsoleModalEl.addEventListener('shown.bs.modal', function (event) {
+            editor.resize();
+          });
+
+          
           elConsoleClearButton.addEventListener("click", ev => {
-            elConsoleInput.value = "";
+                editor.setValue('{' + "\n" + '    "action": ""' + "\n" + '}');
           });
 
          const oCpuGauge = new Gauge({
@@ -411,21 +439,21 @@
             oFeatureHub.m_oSocketClient.addEventListener("socketClose", () => {
                 elStatusModal.show(); 
 
-                term.writeln("UI Socket Disconnected.");
+                DeviceSelection.log("UI Socket Disconnected.");
             });
 
             oFeatureHub.addEventListener("connect", () => {
                 console.log("UI Socket Connected.");
                 elStatusModal.hide();
 
-                term.writeln("UI Socket Connected.");
+                DeviceSelection.log("UI Socket Connected.");
             });
 
-            term.writeln("Connecting to FeatureHub Cloud ...");
+            DeviceSelection.log("Connecting to FeatureHub Cloud ...");
             oFeatureHub.connect(oServerInfo => {
-                term.writeln("Connected to " + oServerInfo.webSocketUrl);
+                DeviceSelection.log("Connected to " + oServerInfo.webSocketUrl);
 
-                term.writeln("Getting list of available devices ...");
+                DeviceSelection.log("Getting list of available devices ...");
                 oFeatureHub.devices(DeviceSelection.onReceiveDevices);
             });
         };
@@ -443,6 +471,17 @@
 
         let DeviceSelection = {};
 
+        DeviceSelection.log = function(sMessage, sLevel){
+            let sColor = '\x1b[37m';
+            if(sLevel === "error"){
+              sColor = '\x1b[1;31m';
+            }
+            
+            let sPrefix = "[UI] ";
+
+            term.writeln(sColor + sPrefix + sMessage); 
+        };
+
         DeviceSelection.init = function(){
             let elSelect = document.getElementById("deviceSelect");
             elSelect.addEventListener("change", DeviceSelection.onSelectDevice);
@@ -451,7 +490,7 @@
         };
 
         DeviceSelection.onReceiveDevices = function(oData){
-          term.writeln("Found " + oData.devices.length + " available devices.");
+          DeviceSelection.log("Found " + oData.devices.length + " available devices.");
           let elSelect = DeviceSelection.elSelect,
               sCurrentValue = elSelect.value,
               bCurrentValueFound = false;
@@ -512,7 +551,7 @@
         };
 
         DeviceSelection.deviceInfo = function(sMachineId){
-            term.writeln("Requesting device info " + sMachineId + " ...");
+          DeviceSelection.log("Requesting device info " + sMachineId + " ...");
             oFeatureHub.device(sMachineId, function(oData){
                   console.log(oData);
                   
@@ -586,7 +625,7 @@
         DeviceSelection.selectDevice = function(sMachineId){
             
             if(sMachineId !== DeviceSelection.m_sSelectedDeviceMachineId){
-                term.writeln("Selected device " + sMachineId);
+              DeviceSelection.log("Selected device " + sMachineId);
             }
             DeviceSelection.m_sSelectedDeviceMachineId = sMachineId;
 
@@ -605,7 +644,14 @@
             */
             oFeatureHub.unsubscribe('deviceConsole');
             oFeatureHub.subscribe('deviceConsole', sMachineId + "/console", function(oData, mHeaders){
-                term.writeln("[" + sMachineId.substr(0, 6) + "] " + oData.args[0]); 
+                let sColor = '\x1b[37m';
+                if(oData.level === "error"){
+                  sColor = '\x1b[1;31m';
+                }
+                
+                let sPrefix = "[" + sMachineId.substr(0, 6) + "] ";
+
+                term.writeln(sColor + sPrefix + oData.args[0]); 
             });
 
             /*
