@@ -107,9 +107,9 @@ class DHT:
             self.listener_thread_paused = True
             self.device.exit()
             print("Closed DHT device.", flush=True)
-        self.device = adafruit_dht.DHT22(board.D4) #adafruit_dht.DHT11(self.settings["pin"])
+        self.device = adafruit_dht.DHT11(board.D4) #adafruit_dht.DHT11(self.settings["pin"])
         self.listener_thread_paused = False
-        print("Initialized DHT device on pin " + str(self.settings["pin"]), flush=True)
+        print("Initialized DHT device on pin " + str(board.D4) + "/" + str(self.settings["pin"]), flush=True)
 
 
     def cleanup(self):
