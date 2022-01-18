@@ -16,6 +16,7 @@ class Ky004:
             "log_level": logging.INFO
         }
         self.listener_thread_running = False
+        self.listener_thread_paused = True
         self.device = None
         
     def send(self, data):
@@ -77,17 +78,19 @@ class Ky004:
         try:
             print("Listening for button presses ...", flush=True)
             self.listener_thread_running = True
-            while True:
-                if(self.settings["log_level"] < logging.INFO):
-                    if(self.device.is_pressed):
-                        print("Button is pressed.", flush=True)
-                    else:
-                        print("Button is released.", flush=True)
-                self.update_state()
+            while self.listener_thread_running:
+                if(not self.listener_thread_paused):
+                    if(self.settings["log_level"] < logging.INFO):
+                        if(self.device.is_pressed):
+                            print("Button is pressed.", flush=True)
+                        else:
+                            print("Button is released.", flush=True)
+                    self.update_state()
                 time.sleep(self.settings["hold_time"])
-
-        except IOError as error:
-            print("IOError: " + str(error), flush=True)
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print(e, file=sys.stderr, flush=True)
         finally:
             self.listener_thread_running = False
     
@@ -99,12 +102,17 @@ class Ky004:
     
     def init(self):
         if(self.device is not None):
+            self.listener_thread_paused = True
             self.device.close()
             print("Closed BUTTON device.", flush=True)
         self.device = gpiozero.Button(self.settings["pin"], bounce_time=self.settings["bounce_time"])
+        self.listener_thread_paused = False
         print("Initialized BUTTON device on pin " + str(self.settings["pin"]), flush=True)
 
+
     def cleanup(self):
+        self.listener_thread_paused = True
+        self.listener_thread_running = False
         if(self.device is not None):
             self.device.close()
             print("Closed BUTTON device.", flush=True)
