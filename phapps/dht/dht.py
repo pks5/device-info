@@ -8,6 +8,7 @@ import adafruit_dht
 
 class DHT:
     def __init__(self):
+        self.version = "0.9.1"
         self.state = {}
         self.settings = {
             "notify_url": None,
@@ -34,6 +35,7 @@ class DHT:
         self.state["humidity"] = self.device.humidity
 
         self.send({
+            "version": self.version,
             "state": self.state,
             "settings": self.settings
         })
@@ -63,14 +65,17 @@ class DHT:
                 return
             
             if(action == "SETUP"):
+                init_required=False
                 given_settings = message_body["settings"]
                 if("pin" in given_settings):
                     self.settings["pin"] = given_settings["pin"]
+                    init_required=True
                 if("scan_time" in given_settings):
                     self.settings["scan_time"] = given_settings["scan_time"]
                 if("log_level" in given_settings):
                     self.settings["log_level"] = given_settings["log_level"]
-                self.init()
+                if(init_required):
+                    self.init()
                 self.update_state()
                 return
     
@@ -97,7 +102,7 @@ class DHT:
                 print(e, file=sys.stderr, flush=True)
                 time.sleep(self.settings["retry_time"])
         print("Listener thread finished.", flush=True)
-
+                
     def listen(self):
         if(self.listener_thread_running):
             print("Listener thread already running.", flush=True)

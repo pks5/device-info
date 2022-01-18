@@ -6,6 +6,7 @@ import threading
 
 class Ky008:
     def __init__(self):
+        self.version = "0.9.1"
         self.state = {}
         self.settings = {
             "notify_url": None,
@@ -30,6 +31,7 @@ class Ky008:
         self.state["mode"] = self.mode
 
         self.send({
+            "version": self.version,
             "state": self.state,
             "settings": self.settings
         })
@@ -117,6 +119,7 @@ class Ky008:
                 return
             
             if(action == "SETUP"):
+                init_required=True
                 given_settings = message_body["settings"]
                 
                 if("pin" in given_settings):
@@ -126,7 +129,8 @@ class Ky008:
                 if("initial_value" in given_settings):
                     self.settings["initial_value"] = given_settings["initial_value"]
                 
-                self.init()
+                if(init_required):
+                    self.init()
                 self.update_state()
                 return
     
@@ -135,7 +139,7 @@ class Ky008:
             self.device.close()
             print("Closed LED device.", flush=True)
         
-        self.device = gpiozero.PWMLED(self.settings["pin"], initial_value=self.settings["initial_value"])
+        self.device = gpiozero.PWMLED(self.settings["pin"], initial_value=self.settings["initial_value"], frequency=self.settings["frequency"])
         
         print("Initialized LED device on pin " + str(self.settings["pin"]), flush=True)
 

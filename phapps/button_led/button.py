@@ -7,6 +7,7 @@ import logging
 
 class Ky004:
     def __init__(self):
+        self.version = "0.9.1"
         self.state = {}
         self.settings = {
             "notify_url": None,
@@ -33,6 +34,7 @@ class Ky004:
         self.state["is_pressed"] = self.device.is_pressed
 
         self.send({
+            "version": self.version,
             "state": self.state,
             "settings": self.settings
         })
@@ -62,16 +64,20 @@ class Ky004:
                 return
             
             if(action == "SETUP"):
+                init_required=False
                 given_settings = message_body["settings"]
                 if("pin" in given_settings):
                     self.settings["pin"] = given_settings["pin"]
+                    init_required=True
                 if("hold_time" in given_settings):
                     self.settings["hold_time"] = given_settings["hold_time"]
                 if("bounce_time" in given_settings):
                     self.settings["bounce_time"] = given_settings["bounce_time"]
+                    init_required=True
                 if("log_level" in given_settings):
                     self.settings["log_level"] = given_settings["log_level"]
-                self.init()
+                if(init_required):
+                    self.init()
                 self.update_state()
                 return
     
