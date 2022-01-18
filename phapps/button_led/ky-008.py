@@ -60,18 +60,24 @@ class Ky008:
             if(action == "ON"):
                 self.device.on()
                 self.mode = "DEFAULT"
+                print("LED is on.", flush=True)
                 self.update_state()
                 return
 
             if(action == "OFF"):
                 self.device.off()
                 self.mode = "DEFAULT"
+                print("LED is off.", flush=True)
                 self.update_state()
                 return
 
             if(action == "TOGGLE"):
                 self.device.toggle()
                 self.mode = "DEFAULT"
+                if(self.device.is_lit):
+                    print("LED is on.", flush=True)
+                else:
+                    print("LED is off.", flush=True)
                 self.update_state()
                 return
 
@@ -88,6 +94,7 @@ class Ky008:
                     
                 self.device.blink(on_time=on_time, off_time=off_time, n=n)
                 self.mode = "BLINK"
+                print("LED is blinking.", flush=True)
                 self.update_state()
                 return
             
@@ -110,12 +117,12 @@ class Ky008:
         
         self.device = gpiozero.LED(self.settings["pin"], initial_value=self.settings["initial_value"])
         
-        print("Initialized led device on pin " + str(self.settings["pin"]), flush=True)
+        print("Initialized LED device on pin " + str(self.settings["pin"]), flush=True)
 
     def cleanup(self):
         if(self.device is not None):
             self.device.close()
-            print("Closed button device.", flush=True)
+            print("Closed LED device.", flush=True)
         
         print("Cleaned up.")
 
