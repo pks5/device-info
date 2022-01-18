@@ -1,6 +1,6 @@
 {
     "app" : {
-        "version": "0.9",
+        "version": "0.9.1",
         "id": "net.featurehub.phapp.button_led",
         "name": "Button & Led"
     },
