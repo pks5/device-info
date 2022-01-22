@@ -660,6 +660,9 @@
             oFeatureHub.unsubscribe('deviceStatus');
             oFeatureHub.subscribe('deviceStatus', sMachineId, onReceiveDeviceStatus);
 
+            oFeatureHub.unsubscribe("sysInfo");
+            oFeatureHub.subscribe("sysInfo", sMachineId + "/app/" + "net.featurehub.phapp.sys" + "/script/" + "sysinfo.py", onReceiveSysInfo);
+
             oFeatureHub.send({ method:"requestStatus" }, { });
 
             fnGetSystemInfo();
@@ -877,7 +880,14 @@
                   oCpuGauge.setSpecs(oData.host.cpus.length+ " x " + oData.host.cpus[0].model).setInfo(Number(oData.host.cpus[0].speed / 1000).toFixed(1) + " Ghz");
                   
               }
-              else if(sPhappId === "net.featurehub.phapp.sys"){
+              else{
+                  //Ignore messages from other PyApps on this device
+              }
+            }
+            
+        };
+
+        let onReceiveSysInfo = function(oData, mHeaders){
                   if(oData.cpu){
                     oCpuGauge.setValue(Number(oData.cpu.utilization).toFixed(1));
                   }
@@ -903,12 +913,6 @@
                   else{
                     oDiskGauge.setValue().setSpecs().setInfo();
                   }
-              }
-              else{
-                  //Ignore messages from other PyApps on this device
-              }
-            }
-            
         };
 
          /*
