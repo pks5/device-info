@@ -6,7 +6,7 @@ import threading
 
 class Ky008:
     def __init__(self):
-        self.version = "0.9.2"
+        self.version = "0.9.3"
         self.state = {}
         self.settings = {
             "notify_url": "fhtp://broadcast/{DEVICE}/app/{APP}/script/{SCRIPT}",
@@ -62,24 +62,25 @@ class Ky008:
 
             if(action == "ON"):
                 self.device.on()
-                self.mode = "DEFAULT"
+                self.mode = "ON"
                 print("LED is on.", flush=True)
                 self.update_state()
                 return
 
             if(action == "OFF"):
                 self.device.off()
-                self.mode = "DEFAULT"
+                self.mode = "OFF"
                 print("LED is off.", flush=True)
                 self.update_state()
                 return
 
             if(action == "TOGGLE"):
                 self.device.toggle()
-                self.mode = "DEFAULT"
                 if(self.device.is_lit):
+                    self.mode = "ON"
                     print("LED is on.", flush=True)
                 else:
+                    self.mode = "OFF"
                     print("LED is off.", flush=True)
                 self.update_state()
                 return
