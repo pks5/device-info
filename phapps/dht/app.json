@@ -1,6 +1,6 @@
 {
     "app" : {
-        "version": "0.9.1",
+        "version": "0.9.2",
         "id": "net.featurehub.phapp.dht",
         "name": "Temperature & Humidity"
     },

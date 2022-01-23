@@ -6,7 +6,7 @@ import threading
 
 class Ky008:
     def __init__(self):
-        self.version = "0.9.1"
+        self.version = "0.9.2"
         self.state = {}
         self.settings = {
             "notify_url": "fhtp://broadcast/{DEVICE}/app/{APP}/script/{SCRIPT}",
