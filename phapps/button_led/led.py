@@ -9,7 +9,7 @@ class Ky008:
         self.version = "0.9.1"
         self.state = {}
         self.settings = {
-            "notify_url": None,
+            "notify_url": "fhtp://broadcast/{DEVICE}/app/{APP}/script/{SCRIPT}",
             "pin": 6,
             "initial_value": False,
             "frequency": 100

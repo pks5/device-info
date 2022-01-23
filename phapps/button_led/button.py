@@ -10,7 +10,7 @@ class Ky004:
         self.version = "0.9.1"
         self.state = {}
         self.settings = {
-            "notify_url": None,
+            "notify_url": "fhtp://broadcast/{DEVICE}/app/{APP}/script/{SCRIPT}",
             "pin": 5,
             "hold_time": 1,
             "bounce_time": None,
