@@ -461,7 +461,7 @@
         let scriptLocation = 'https://my.featurehub.net/lib/v1/fhub.js';
 
         if(location.hostname.indexOf('.localnet') !== -1){
-          //  scriptLocation = 'http://my.featurehub.localnet:8787/lib/v1/fhub.js';
+          //  scriptLocation = 'http://app.featurehub.localnet:8787/lib/v1/fhub.js';
         }
 
         const script = document.createElement('script');
@@ -664,8 +664,6 @@
             oFeatureHub.subscribe("sysInfo", sMachineId + "/app/" + "net.featurehub.phapp.sys" + "/script/" + "sysinfo.py", onReceiveSysInfo);
 
             oFeatureHub.send({ method:"requestStatus" }, { });
-
-            fnGetSystemInfo();
         };
 
         DeviceSelection.enableButtons = function(bEnabled){
@@ -941,12 +939,6 @@
         elDevToolsButton.addEventListener("click", function(){
             oFeatureHub.send({ method: "toggleDevTools" }, {});
         });
-
-        const fnGetSystemInfo = () => {
-          oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"sysinfo.py", method: "sendMessage" }, { "action": "STATUS" });
-        };
-
-        setInterval(fnGetSystemInfo, 10000);
         
     </script>
 
