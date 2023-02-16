@@ -303,7 +303,7 @@
     <script src="js/gauge.js"></script>
     <script src="js/conic-gradient.js"></script>
     <script src="js/countdown.min.js"></script>
-    <script src="https://pagecdn.io/lib/ace/1.4.13/ace.min.js" crossorigin="anonymous" integrity="sha256-GjtAsBCI/KPlEYQf0I8yNimcThRoWMnk7Vpi+dUt+GY=" ></script>
+    <script src="https://pagecdn.io/lib/ace/1.4.13/ace.min.js"></script>
     <script>
       ace.config.set('basePath', 'https://pagecdn.io/lib/ace/1.4.13/')
 
@@ -353,7 +353,7 @@
           });
 
           elRunAppButton.addEventListener("click", ev => {
-            oFeatureHub.send({ method: "startApp" }, { app: {url: elAppUrlInput.value} });
+            oFeatureHub.sendMessage({ method: "startApp" }, { app: {url: elAppUrlInput.value} });
           });
 
           elConsoleSendButton.addEventListener("click", ev => {
@@ -364,7 +364,7 @@
               try {
                   let oPayload = JSON.parse(editor.getValue());
 
-                  oFeatureHub.send({ "app":sAppId, "script":sScriptPath, method: "sendMessage" }, oPayload);
+                  oFeatureHub.sendMessage({"device":DeviceSelection.m_sSelectedDeviceMachineId, "app":sAppId, "script":sScriptPath, method: "sendMessage" }, oPayload);
                   DeviceSelection.log("Sent " + JSON.stringify(oPayload) + " to " + sAppId + "/" + sScriptPath);
               } catch (e) {
                   if (e instanceof SyntaxError) {
@@ -430,8 +430,8 @@
         let fnConnect = function(){
             DeviceSelection.init();
             
-            oFeatureHub = new FeatureHub({
-                appId: oConfig.appId,
+            oFeatureHub = new Feature({
+                featureId: oConfig.appId,
                 clientId: oConfig.authClientId
             });
 
@@ -462,8 +462,11 @@
 
         if(location.hostname.indexOf('.localnet') !== -1){
           //  scriptLocation = 'http://app.featurehub.localnet:8787/lib/v1/fhub.js';
+          
         }
 
+        scriptLocation = 'http://mbp-pks.local:8787/lib/v1/feature.js';
+        
         const script = document.createElement('script');
         script.src = scriptLocation;
         script.addEventListener('load', fnConnect);
@@ -629,21 +632,11 @@
             }
             DeviceSelection.m_sSelectedDeviceMachineId = sMachineId;
 
-          /*
-            * Setup Default Target
-            */
-            oFeatureHub.setDefaultTarget({
-              device: sMachineId
-            });
-
-
-            
-
             /*
             * Subscribe to Console
             */
             oFeatureHub.unsubscribe('deviceConsole');
-            oFeatureHub.subscribe('deviceConsole', sMachineId + "/console", function(oData, mHeaders){
+            oFeatureHub.subscribeToBroadcast('deviceConsole', sMachineId + "/console", function(oData, mHeaders){
                 let sColor = '\x1b[37m';
                 if(oData.level === "error"){
                   sColor = '\x1b[1;31m';
@@ -658,12 +651,12 @@
             * Subscribe to Device Status
             */
             oFeatureHub.unsubscribe('deviceStatus');
-            oFeatureHub.subscribe('deviceStatus', sMachineId, onReceiveDeviceStatus);
+            oFeatureHub.subscribeToBroadcast('deviceStatus', sMachineId, onReceiveDeviceStatus);
 
             oFeatureHub.unsubscribe("sysInfo");
-            oFeatureHub.subscribe("sysInfo", sMachineId + "/app/" + "net.featurehub.phapp.sys" + "/script/" + "sysinfo.py", onReceiveSysInfo);
+            oFeatureHub.subscribeToBroadcast("sysInfo", sMachineId + "/app/" + "net.featurehub.phapp.sys" + "/script/" + "sysinfo.py", onReceiveSysInfo);
 
-            oFeatureHub.send({ method:"requestStatus" }, { });
+            oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, method:"requestStatus" }, { });
         };
 
         DeviceSelection.enableButtons = function(bEnabled){
@@ -769,7 +762,7 @@
                           elListItemCell.href = "#";
                           elListItemCell.dataset.appId = oApp.appId;
                           elListItemCell.addEventListener("click", function(ev) {
-                              oFeatureHub.send({ method: "stopApp" }, { appId: this.dataset.appId });
+                              oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, method: "stopApp" }, { appId: this.dataset.appId });
                           });
 
                           let elStopIcon = document.createElement("i");
@@ -921,23 +914,23 @@
         * Shutdown Button Click Handler
         */    
         elShutdownButton.addEventListener("click", function(){
-            oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "SHUTDOWN" });
+            //oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "SHUTDOWN" });
         });
 
         /*
         * Reboot Button Click Handler
         */
         elRebootButton.addEventListener("click", function(){
-            oFeatureHub.send({ "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "REBOOT" });
-            oFeatureHub.send({ method:"requestStatus" }, { });
+           // oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, "app":"net.featurehub.phapp.sys", "script":"power.py", method: "sendMessage" }, { "action": "REBOOT" });
+            oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, method:"requestStatus" }, { });
         });
 
         elExitButton.addEventListener("click", function(){
-            oFeatureHub.send({ method: "exitGracefully" }, {});
+            oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, method: "exitGracefully" }, {});
         });
 
         elDevToolsButton.addEventListener("click", function(){
-            oFeatureHub.send({ method: "toggleDevTools" }, {});
+            oFeatureHub.sendMessage({ "device":DeviceSelection.m_sSelectedDeviceMachineId, method: "toggleDevTools" }, {});
         });
         
     </script>
